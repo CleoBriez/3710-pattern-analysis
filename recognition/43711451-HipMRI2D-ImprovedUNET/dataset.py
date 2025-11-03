@@ -6,6 +6,8 @@ Contains the data loader and preprocessing for the HipMRI 2D Slice Dataset to be
 import numpy as np
 import nibabel as nib
 from tqdm import tqdm
+from pathlib import Path
+import glob
 import torch
 from torch.utils.data import DataLoader, Dataset
 
@@ -18,6 +20,16 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
+path = "D:\keras_slices_data"
+
+testPath = path + "/keras_slices_test/"
+trainPath = path + "/keras_slices_train/"
+validPath = path + "/keras_slices_validate/"
+
+segTestPath = path + "/keras_slices_seg_test/"
+segTrainPath = path + "/keras_slices_seg_train/"
+segValidPath = path + "/keras_slices_seg_validate/"
+
 def to_channels(arr: np.ndarray, dtype = np.uint8)-> np.ndarray:
     channels = np.unique(arr)
     res = np.zeros(arr.shape +(len(channels ),), dtype = dtype)
@@ -28,14 +40,14 @@ def to_channels(arr: np.ndarray, dtype = np.uint8)-> np.ndarray:
 
 # load medical image functions
 def load_data_2D(imageNames, normImage = False, categorical = False, dtype = np.float32, getAffines = False, early_stop = False):
-    '''
+    """
     Load medical image data from names, cases list provided into a list for each
 
     This function pre - allocates 4 D arrays for conv2d to avoid excessive memory usage
     
     normImage: bool(normalise the image 0.0 -1.0) 
     early_stop: Stop loading pre - maturely, leaves arrays mostly empty, for quick loading and testing scripts
-    '''
+    """
 
     affines = []
 
@@ -77,6 +89,22 @@ def load_data_2D(imageNames, normImage = False, categorical = False, dtype = np.
         else:
             return images
 
-# Loading Images and Masks
-def load(path):
-    return
+testData = sorted(Path(testPath).glob("*.gz"))
+testImages = load_data_2D(testData, normImage= True, categorical= False)
+
+trainData = sorted(Path(trainPath).glob("*.gz"))
+trainImages = load_data_2D(trainData, normImage= True, categorical= False)
+
+validData = sorted(Path(validPath).glob("*.gz"))
+validImages = load_data_2D(validData, normImage= True, categorical= False)
+
+segTestData = sorted(Path(segTestPath).glob("*.gz"))
+segTestImages = load_data_2D(segTestData, normImage= True, categorical= False)
+
+segTrainData = sorted(Path(segTrainPath).glob("*.gz"))
+segTrainImages = load_data_2D(segTrainData, normImage= True, categorical= False)
+
+segValidData = sorted(Path(segValidPath).glob("*.gz"))
+segValidImages = load_data_2D(segValidData, normImage= True, categorical= False)
+    
+print("> Set up dataset")
