@@ -7,8 +7,6 @@ import numpy as np
 import nibabel as nib
 from tqdm import tqdm
 from pathlib import Path
-import glob
-import torch
 from torch.utils.data import DataLoader, Dataset
 
 __author__ = "Cleodora Kizmann"
@@ -113,5 +111,3 @@ class HipMRI2D(Dataset):
             mask = augmented['mask']
         
         return image, mask
-    
-Hip = HipMRI2D("train", transform= None)
