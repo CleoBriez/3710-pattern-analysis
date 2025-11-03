@@ -5,9 +5,6 @@ Contains the main prediction script for the model after training
 
 import dataset as data
 import modules as module
-import torch
-import numpy as np
-from matplotlib import pyplot
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
