@@ -20,15 +20,7 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
-path = "D:\keras_slices_data/keras_slices_"
-
-testPath = path + "test/"
-trainPath = path + "train/"
-validPath = path + "validate/"
-
-segTestPath = path + "seg_test/"
-segTrainPath = path + "seg_train/"
-segValidPath = path + "seg_validate/"
+path = "D:\keras_slices_data/"
 
 def to_channels(arr: np.ndarray, dtype = np.uint8)-> np.ndarray:
     channels = np.unique(arr)
@@ -91,34 +83,35 @@ def load_data_2D(imageNames, normImage = False, categorical = False, dtype = np.
 
 class HipMRI2D(Dataset):
     """
-    
+    Dataset class for segmentation for HipMRI 2D dataset. 
+
+    This dataset assumes: 
+        the file structure retrieved from rangpur 
+        path adjusted in the global path variable
+        image input is "test", "train" or "validate"
     """
     def __init__(self, image, transform = None):
         self.image = image
         self.mask = "seg_" + image
         self.transform = transform
 
-        self.image_files = sorted(Path(path + image).glob("*.gz"))
-        self.mask_files = sorted(Path(path + "seg_" + image).glob("*.gz"))
+        self.image_files = load_data_2D(sorted(Path(path + "keras_slices_" + image).glob("*.gz")), normImage = True, categorical = False)
+        self.mask_files = load_data_2D(sorted(Path(path + "keras_slices_seg_" + image).glob("*.gz")), normImage = True, categorical = False)
 
     def __len__(self):
         return len(self.image_files)
     
     def __getitem__(self, index):
         # Get filename
-        image_name = self.image_files[index]
-        mask_name = self.mask_files[index]
-
-        # Define full path
-        image_path = Path(self.image_files + image_name).glob("*.gz")
-        mask_path = Path(self.mask_files + mask_name).glob("*.gz")
-
-        # Load files
-        image = load_data_2D(image_path, normImage = True, categorical = False)
-        mask = load_data_2D(mask_path, normImage = True, categorical = False)
+        image= self.image_files[index]
+        mask = self.mask_files[index]
 
         # Augmentations 
-
-        # Format for Pytorch
-
-Hip = HipMRI2D("train", transform = None)
+        if self.transform  :
+            augmented = self.transform(image = image, mask = mask)
+            image = augmented['image']
+            mask = augmented['mask']
+        
+        return image, mask
+    
+Hip = HipMRI2D("train", transform= None)
