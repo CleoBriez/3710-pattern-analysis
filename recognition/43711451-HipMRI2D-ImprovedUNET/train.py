@@ -21,6 +21,6 @@ __status__ = "Prototype"
 l_rate = 0.0001
 epochs = 50
 
-path = "/home/groups/comp3710/HipMRI_Study_open/keras_slices_data/"
+path = "keras_slices_data"
 train_X, validate_X, test_X = data.get_X_data(path)
 train_Y, validate_Y, test_Y = data.get_Y_data(path)
