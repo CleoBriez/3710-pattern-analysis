@@ -6,6 +6,8 @@ Contains the data loader and preprocessing for the HipMRI 2D Slice Dataset to be
 import numpy as np
 import nibabel as nib
 from tqdm import tqdm
+import torch
+from torch.utils.data import DataLoader, Dataset
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -74,3 +76,7 @@ def load_data_2D(imageNames, normImage = False, categorical = False, dtype = np.
             return images, affines
         else:
             return images
+
+# Loading Images and Masks
+def load(path):
+    return
