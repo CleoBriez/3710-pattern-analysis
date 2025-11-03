@@ -20,15 +20,15 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
-path = "D:\keras_slices_data"
+path = "D:\keras_slices_data/keras_slices_"
 
-testPath = path + "/keras_slices_test/"
-trainPath = path + "/keras_slices_train/"
-validPath = path + "/keras_slices_validate/"
+testPath = path + "test/"
+trainPath = path + "train/"
+validPath = path + "validate/"
 
-segTestPath = path + "/keras_slices_seg_test/"
-segTrainPath = path + "/keras_slices_seg_train/"
-segValidPath = path + "/keras_slices_seg_validate/"
+segTestPath = path + "seg_test/"
+segTrainPath = path + "seg_train/"
+segValidPath = path + "seg_validate/"
 
 def to_channels(arr: np.ndarray, dtype = np.uint8)-> np.ndarray:
     channels = np.unique(arr)
@@ -89,22 +89,36 @@ def load_data_2D(imageNames, normImage = False, categorical = False, dtype = np.
         else:
             return images
 
-testData = sorted(Path(testPath).glob("*.gz"))
-testImages = load_data_2D(testData, normImage= True, categorical= False)
-
-trainData = sorted(Path(trainPath).glob("*.gz"))
-trainImages = load_data_2D(trainData, normImage= True, categorical= False)
-
-validData = sorted(Path(validPath).glob("*.gz"))
-validImages = load_data_2D(validData, normImage= True, categorical= False)
-
-segTestData = sorted(Path(segTestPath).glob("*.gz"))
-segTestImages = load_data_2D(segTestData, normImage= True, categorical= False)
-
-segTrainData = sorted(Path(segTrainPath).glob("*.gz"))
-segTrainImages = load_data_2D(segTrainData, normImage= True, categorical= False)
-
-segValidData = sorted(Path(segValidPath).glob("*.gz"))
-segValidImages = load_data_2D(segValidData, normImage= True, categorical= False)
+class HipMRI2D(Dataset):
+    """
     
-print("> Set up dataset")
+    """
+    def __init__(self, image, transform = None):
+        self.image = image
+        self.mask = "seg_" + image
+        self.transform = transform
+
+        self.image_files = sorted(Path(path + image).glob("*.gz"))
+        self.mask_files = sorted(Path(path + "seg_" + image).glob("*.gz"))
+
+    def __len__(self):
+        return len(self.image_files)
+    
+    def __getitem__(self, index):
+        # Get filename
+        image_name = self.image_files[index]
+        mask_name = self.mask_files[index]
+
+        # Define full path
+        image_path = Path(self.image_files + image_name).glob("*.gz")
+        mask_path = Path(self.mask_files + mask_name).glob("*.gz")
+
+        # Load files
+        image = load_data_2D(image_path, normImage = True, categorical = False)
+        mask = load_data_2D(mask_path, normImage = True, categorical = False)
+
+        # Augmentations 
+
+        # Format for Pytorch
+
+Hip = HipMRI2D("train", transform = None)
