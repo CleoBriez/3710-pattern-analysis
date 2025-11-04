@@ -111,3 +111,5 @@ class HipMRI2D(Dataset):
             mask = augmented['mask']
         
         return image, mask
+    
+# DO THE DATALOADER
