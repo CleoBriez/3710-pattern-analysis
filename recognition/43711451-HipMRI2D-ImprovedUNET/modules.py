@@ -4,6 +4,7 @@ Contains the implementation of the Improved UNet segmentation model to be used f
 """
 
 import os
+import torch
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -17,16 +18,4 @@ __status__ = "Prototype"
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not torch.cuda.is_available():
-    print("Warning CUDA not Found. Using CPU")
-
-def encoder(input):
-    return  
-
-def decorder(skipList, input):
-    return
-
-def bottleneck(input):
-    return
-    
-def UNet():
-    return
+    print(f"Using device: {device}")
