@@ -129,7 +129,7 @@ class HipMRI2D(Dataset):
 
         return image, binary_mask
     
-Hip = HipMRI2D(image="train", seg=True)
-HipLoader = DataLoader(Hip, batch_size=32, shuffle=True)
-print(Hip.__getitem__(0))
+Hip = HipMRI2D(image="train", seg=True, transform=True)
+# HipLoader = DataLoader(Hip, batch_size=32, shuffle=True)
+# print(Hip.__getitem__(0))
 # utils.show_examples(Hip, title="HipMRI 2D Dataset Examples", n=3)
