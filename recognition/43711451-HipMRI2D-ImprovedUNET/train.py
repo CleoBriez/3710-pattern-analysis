@@ -3,6 +3,7 @@
 Contains the main training script for the model
 """
 
+import utils as utils
 import dataset as data
 import modules as module
 from modules import UNet as model
@@ -21,7 +22,7 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
-device = module.device
+device = utils.device
 
 class DiceLoss(nn.Module):
     """Dice Loss for binary segmentation.

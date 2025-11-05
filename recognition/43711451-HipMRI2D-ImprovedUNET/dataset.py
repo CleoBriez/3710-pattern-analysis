@@ -3,11 +3,14 @@
 Contains the data loader and preprocessing for the HipMRI 2D Slice Dataset to be used by the model
 """
 
+import utils as utils
 import numpy as np
 import nibabel as nib
 from tqdm import tqdm
 from pathlib import Path
+import torch
 from torch.utils.data import DataLoader, Dataset
+import torchvision.transforms as transforms
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -88,28 +91,43 @@ class HipMRI2D(Dataset):
         path adjusted in the global path variable
         image input is "test", "train" or "validate"
     """
-    def __init__(self, image, transform = None):
+    def __init__(self, image, seg, transform = None):
         self.image = image
-        self.mask = "seg_" + image
+        self.seg = seg # "seg_" + image
         self.transform = transform
 
-        self.image_files = load_data_2D(sorted(Path(path + "keras_slices_" + image).glob("*.gz")), normImage = True, categorical = False)
-        self.mask_files = load_data_2D(sorted(Path(path + "keras_slices_seg_" + image).glob("*.gz")), normImage = True, categorical = False)
+        if seg == False:
+            self.image_files = load_data_2D(sorted(Path(path + "keras_slices_" + image).glob("*.gz")), normImage = True, categorical = False)
+        else:
+            self.image_files = load_data_2D(sorted(Path(path + "keras_slices_seg_" + image).glob("*.gz")), normImage = True, categorical = False)
+
+        transform = transforms.Compose([
+            transforms.Resize((256, 256)),
+            transforms.ToTensor() # This converts to 0-1 range automatically for RGB
+            # No Normalization here as images are already normalized
+        ])
 
     def __len__(self):
         return len(self.image_files)
     
     def __getitem__(self, index):
         # Get filename
-        image= self.image_files[index]
-        mask = self.mask_files[index]
+        image, mask = self.image_files[index]
+        # Transforms
+        if self.transform:
+            image = self.transform(image)
 
-        # Augmentations 
-        if self.transform  :
-            augmented = self.transform(image = image, mask = mask)
-            image = augmented['image']
-            mask = augmented['mask']
+        mask = transforms.Resize((256, 256), interpolation=transforms.InterpolationMode.NEAREST)(mask)
+        mask_np = np.array(mask)  # Convert PIL to numpy array - this preserves [1,2,3]
+        mask = np.zeros_like(mask_np, dtype=np.uint8)
+        mask[mask_np == 1] = 1  # pet pixels = 1
+        mask[mask_np == 2] = 0  # background pixels = 0
+        mask[mask_np == 3] = 0  # border pixels -> background (no ignored pixels)
         
+        # Convert to tensor
+        binary_mask = torch.from_numpy(binary_mask).long()
+
         return image, mask
     
-# DO THE DATALOADER
+
+    
