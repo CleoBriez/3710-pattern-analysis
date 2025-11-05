@@ -3,6 +3,7 @@
 Contains the main prediction script for the model after training
 """
 
+import utils as utils
 import dataset as data
 import modules as module
 import train as trained

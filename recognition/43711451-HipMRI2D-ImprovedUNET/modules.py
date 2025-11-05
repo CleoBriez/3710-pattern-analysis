@@ -3,6 +3,8 @@
 Contains the implementation of the Improved UNet segmentation model to be used for training and prediction
 """
 
+import utils as utils
+import dataset as data
 import torch
 import torch.nn as nn
 
@@ -14,11 +16,6 @@ __version__ = "0.0.1"
 __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
-
-# Device configuration
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-if not torch.cuda.is_available():
-    print(f"Using device: {device}") # It won't recognise my GPU at home :c
 
 class DoubleConv(nn.Module):
     """
@@ -141,3 +138,10 @@ class UNet(nn.Module):
         # ----- Output -----
         logits = self.outc(x)    # -> (B, n_classes, 256, 256)
         return logits
+    
+def denormalize_image(tensor):
+    """Denormalize a tensor image with ImageNet mean and std."""
+    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+    denorm_tensor = tensor * std + mean
+    return torch.clamp(denorm_tensor, 0, 1)
