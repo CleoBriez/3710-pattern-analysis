@@ -31,7 +31,7 @@ def denormalize_image(tensor):
     denorm_tensor = tensor * std + mean
     return torch.clamp(denorm_tensor, 0, 1)
 
-def show_examples(dataset, title="Dataset Examples", n=3):
+def show_examples(dataset, title = "Dataset Examples", n = 3):
     """
     Quick visualization for color demo with binary masks.
     """
@@ -45,7 +45,7 @@ def show_examples(dataset, title="Dataset Examples", n=3):
         img_show = denormalize_image(image)
 
         # Show color image (transpose from CHW to HWC for matplotlib)
-        img_display = img_show.permute(1, 2, 0).numpy()  # CHW -> HWC
+        img_display = img_show.permute(1, 2, 0).numpy() # CHW -> HWC
         axes[0, i].imshow(img_display)
         axes[0, i].set_title(f'HipMRI Image {i+1} (Color RGB)', fontweight='bold')
         axes[0, i].axis('off')
@@ -53,21 +53,21 @@ def show_examples(dataset, title="Dataset Examples", n=3):
         # Debug mask values for this sample
         mask_np = mask.numpy()
         unique_vals = np.unique(mask_np)
-        pet_count = np.sum(mask_np == 1)
+        hip_count = np.sum(mask_np == 1)
         bg_count = np.sum(mask_np == 0)
 
         # Show binary mask with better colormap
         im = axes[1, i].imshow(mask_np, cmap='RdBu', vmin=0, vmax=1)
-        axes[1, i].set_title(f'Mask {i+1} (Pet:{pet_count}, BG:{bg_count})', fontweight='bold')
+        axes[1, i].set_title(f'Mask {i+1} (Hip:{hip_count}, BG:{bg_count})', fontweight='bold')
         axes[1, i].axis('off')
 
         # Add colorbar for the first image to show the scale
         if i == 0:
             from matplotlib.colors import ListedColormap
-            colors = ['blue', 'red']  # blue for background (0), red for pet (1)
+            colors = ['blue', 'red']  # blue for background (0), red for hip (1)
             cmap = ListedColormap(colors)
             im = axes[1, i].imshow(mask_np, cmap=cmap, vmin=0, vmax=1)
-            plt.colorbar(im, ax=axes[1, i], shrink=0.6, ticks=[0, 1], label='0=BG, 1=Pet')
+            plt.colorbar(im, ax=axes[1, i], shrink=0.6, ticks=[0, 1], label='0=BG, 1=hip')
 
     plt.tight_layout()
     plt.show()
@@ -86,9 +86,9 @@ def show_epoch_predictions(model, dataset, epoch, n=3):
 
             # Predict with sigmoid model
             pred = model(image.unsqueeze(0).to(device))
-            # Get pet class probability and convert to binary
-            pred_pet_prob = pred[0, 0].cpu().numpy()  # Pet class probability
-            pred_binary = (pred_pet_prob > 0.5).astype(int)  # Binary prediction
+            # Get hip class probability and convert to binary
+            pred_hip_prob = pred[0, 0].cpu().numpy()  # hip class probability
+            pred_binary = (pred_hip_prob > 0.5).astype(int)  # Binary prediction
 
             # Denormalize image for visualization
             img_show = denormalize_image(image)
