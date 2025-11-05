@@ -91,7 +91,7 @@ class HipMRI2D(Dataset):
         path adjusted in the global path variable
         image input is "test", "train" or "validate"
     """
-    def __init__(self, image, seg, transform = None):
+    def __init__(self, image = "train", seg = False, transform = None):
         self.image = image
         self.seg = seg # "seg_" + image
         self.transform = transform
@@ -119,15 +119,17 @@ class HipMRI2D(Dataset):
 
         mask = transforms.Resize((256, 256), interpolation=transforms.InterpolationMode.NEAREST)(mask)
         mask_np = np.array(mask)  # Convert PIL to numpy array - this preserves [1,2,3]
-        mask = np.zeros_like(mask_np, dtype=np.uint8)
-        mask[mask_np == 1] = 1  # pet pixels = 1
-        mask[mask_np == 2] = 0  # background pixels = 0
-        mask[mask_np == 3] = 0  # border pixels -> background (no ignored pixels)
+        binary_mask = np.zeros_like(mask_np, dtype=np.uint8)
+        binary_mask[mask_np == 1] = 1  # prostate pixels = 1
+        binary_mask[mask_np == 2] = 0  # background pixels = 0
+        binary_mask[mask_np == 3] = 0  # border pixels -> background (no ignored pixels)
         
         # Convert to tensor
         binary_mask = torch.from_numpy(binary_mask).long()
 
-        return image, mask
+        return image, binary_mask
     
-
-    
+Hip = HipMRI2D(image="train", seg=True)
+HipLoader = DataLoader(Hip, batch_size=32, shuffle=True)
+print(Hip.__getitem__(0))
+# utils.show_examples(Hip, title="HipMRI 2D Dataset Examples", n=3)
