@@ -21,7 +21,7 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
-path = "D:\keras_slices_data/"
+path = "D:/keras_slices_data/"
 
 def to_channels(arr: np.ndarray, dtype = np.uint8)-> np.ndarray:
     channels = np.unique(arr)
