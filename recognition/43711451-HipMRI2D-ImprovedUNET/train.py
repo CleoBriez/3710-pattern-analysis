@@ -3,7 +3,7 @@
 Contains the main training script for the model
 """
 
-import utils as utils
+import utils as util
 import dataset as data
 import modules as module
 from modules import UNet as model
@@ -21,8 +21,6 @@ __version__ = "0.0.1"
 __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
-
-device = utils.device
 
 class DiceLoss(nn.Module):
     """Dice Loss for binary segmentation.
@@ -54,48 +52,8 @@ class DiceLoss(nn.Module):
         # Return Dice Loss (1 - Dice Coefficient)
         return 1 - dice_coeff
 
-def show_epoch_predictions(model, dataset, epoch, n=3):
-    """Show model predictions after a specific epoch."""
-    model.eval()
-    fig, axes = plt.subplots(3, n, figsize=(12, 9))
-    fig.suptitle(f'🎯 Predictions After Epoch {epoch}', fontsize=16, fontweight='bold')
-
-    with torch.no_grad():
-        for i in range(n):
-            image, true_mask = dataset[i]
-
-            # Predict with sigmoid model
-            pred = model(image.unsqueeze(0).to(device))
-            # Get pet class probability and convert to binary
-            pred_pet_prob = pred[0, 0].cpu().numpy()  # Pet class probability
-            pred_binary = (pred_pet_prob > 0.5).astype(int)  # Binary prediction
-
-            # Denormalize image for visualization
-            img_show = module.denormalize_image(image)
-
-            # Show original color image (transpose from CHW to HWC for matplotlib)
-            img_display = img_show.permute(1, 2, 0).numpy()  # CHW -> HWC
-            axes[0, i].imshow(img_display)
-            axes[0, i].set_title(f'Original {i+1}', fontweight='bold')
-            axes[0, i].axis('off')
-
-            # Show ground truth binary mask
-            axes[1, i].imshow(true_mask, cmap='RdYlBu_r', vmin=0, vmax=1)
-            axes[1, i].set_title(f'Ground Truth {i+1}', fontweight='bold')
-            axes[1, i].axis('off')
-
-            # Show prediction with accuracy
-            axes[2, i].imshow(pred_binary, cmap='RdYlBu_r', vmin=0, vmax=1)
-            accuracy = np.mean(pred_binary == true_mask.numpy())
-            axes[2, i].set_title(f'Prediction {i+1} (Acc: {accuracy:.3f})', fontweight='bold')
-            axes[2, i].axis('off')
-
-    plt.tight_layout()
-    plt.show()
-    model.train()  # Switch back to training mode
-    
 def train(model, train_loader, test_dataset, epochs=3, lr=0.001, visualize_every=1):
-    model.to(device)
+    model.to(util.device)
     criterion = DiceLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -108,7 +66,7 @@ def train(model, train_loader, test_dataset, epochs=3, lr=0.001, visualize_every
 
         # Training loop with progress
         for batch_idx, (images, masks) in enumerate(train_loader):
-            images, masks = images.to(device), masks.to(device)
+            images, masks = images.to(util.device), masks.to(util.device)
 
             optimizer.zero_grad()
             outputs = model(images)
@@ -130,7 +88,7 @@ def train(model, train_loader, test_dataset, epochs=3, lr=0.001, visualize_every
 
         # Visualize predictions after each epoch (or every few epochs)
         if (epoch) % visualize_every == 0:
-            show_epoch_predictions(model, test_dataset, epoch + 1, n=3)
+            util.how_epoch_predictions(model, test_dataset, epoch + 1, n=3)
 
     print(" Training complete with enhanced U-Net!")
     return losses
