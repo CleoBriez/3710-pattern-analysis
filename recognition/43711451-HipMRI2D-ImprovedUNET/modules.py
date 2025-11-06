@@ -3,7 +3,7 @@
 Contains the implementation of the Improved UNet segmentation model to be used for training and prediction
 """
 
-import utils as utils
+import utils as util
 import dataset as data
 import torch
 import torch.nn as nn

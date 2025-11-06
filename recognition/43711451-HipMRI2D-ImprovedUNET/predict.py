@@ -3,7 +3,7 @@
 Contains the main prediction script for the model after training
 """
 
-import utils as utils
+import utils as util
 import dataset as data
 import modules as module
 import train as trained
@@ -21,8 +21,6 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
-device = module.device
-
 def show_predictions(model, dataset, title="🎯 Binary Segmentation Results (Normalized Color)", n=3):
     """Show model predictions vs ground truth for normalized color-based binary segmentation."""
     model.eval()
@@ -34,7 +32,7 @@ def show_predictions(model, dataset, title="🎯 Binary Segmentation Results (No
             image, true_mask = dataset[i]
 
             # Predict with sigmoid model
-            pred = model(image.unsqueeze(0).to(device))
+            pred = model(image.unsqueeze(0).to(util.device))
             # Get pet class probability and convert to binary
             pred_pet_prob = pred[0, 0].cpu().numpy()  # Pet class probability
             pred_binary = (pred_pet_prob > 0.5).astype(int)  # Binary prediction

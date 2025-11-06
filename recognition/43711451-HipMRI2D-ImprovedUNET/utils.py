@@ -18,8 +18,7 @@ __status__ = "Prototype"
 
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-if not torch.cuda.is_available():
-    print(f"Using device: {device}") # It won't recognise my GPU at home :c
+print(f"Using device: {device}")
 
 # Visualization functions
 def denormalize_image(tensor):
@@ -31,9 +30,10 @@ def denormalize_image(tensor):
     denorm_tensor = tensor * std + mean
     return torch.clamp(denorm_tensor, 0, 1)
 
-def show_examples(dataset, title = "Dataset Examples", n = 3):
+def visualise(dataset, title, n = 1):
     """
     Quick visualization for color demo with binary masks.
+    
     """
     fig, axes = plt.subplots(2, n, figsize=(12, 6))
     fig.suptitle(title, fontsize=16, fontweight='bold')
