@@ -48,7 +48,16 @@ def train(training_loader = training_loader,
             criterion = util.Dice(),
             optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)):
     """
-    Train the Attention U-Net model with Batch Norm, LeakyReLU, and Sigmoid activation.
+    Train the Attention U-Net model with the training and validation data loaders.
+    
+    Args:
+        training_loader: DataLoader for training data.
+        epochs: Number of training epochs.
+        model: The Attention U-Net model to be trained.
+        criterion: Loss function to be used.
+        optimizer: Optimizer for model parameters.
+    Returns:
+        losses: List of average training losses per epoch.
     """
 
     losses = []
