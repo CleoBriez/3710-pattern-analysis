@@ -218,3 +218,9 @@ class HipMRI2D(Dataset):
         mask_tensor = mask_tensor.permute(2, 0, 1) # (H, W, C) -> (C, H, W)
 
         return image_tensor, mask_tensor
+    
+    def get_mean(self):
+        return np.mean(self.dataset)
+    
+    def get_std(self):
+        return np.std(self.dataset)
