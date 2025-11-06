@@ -5,11 +5,8 @@ Contains the main training script for the model
 
 import utils as util
 import dataset as data
-import modules as module
 from modules import AttentionUNet as model
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader
 
 __author__ = "Cleodora Kizmann"
@@ -27,26 +24,26 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Hyperparameters
 LEARNING_RATE = 1e-4
 BATCH_SIZE = 8 # I got 8GB VRAM on my GPU
-NUM_EPOCHS = 25
+NUM_EPOCHS = 1
 NUM_CLASSES = 6
 
 print("💛 Loading training data 💛")
 training_dataset = data.HipMRI2D(dataset = "train", first_n= 20)
-training_loader = DataLoader(training_dataset, batch_size=8, shuffle=True) 
+training_loader = DataLoader(training_dataset, batch_size=BATCH_SIZE, shuffle=True) 
 print("💚 Training data loading complete 💚")
 
 print("💛 Loading validation data 💛")
-training_dataset = data.HipMRI2D(dataset = "validate", first_n= 20)
-training_loader = DataLoader(training_dataset, batch_size=8, shuffle=True) 
+validation_dataset = data.HipMRI2D(dataset = "validate", first_n= 20)
+validation_loader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=True) 
 print("💚 Validation data loading complete 💚")
 
 print(f"💛 Initialising the Attention U-Net model on {device} 💛")
-model = model(num_channels= 1 , num_classes = 6)
+model = model(num_channels= 1 , num_classes = NUM_CLASSES)
 model.to(device)
 print(f"💚 Model initialisation complete on {device} 💚")
 
 def train(training_loader = training_loader, 
-            epochs = 1,
+            epochs = NUM_EPOCHS,
             model = model, 
             criterion = util.Dice(),
             optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)):
@@ -62,14 +59,13 @@ def train(training_loader = training_loader,
         epoch_loss = 0
 
         # Training loop with progress
-        for (images, masks) in enumerate(training_loader):
+        for images, masks in training_loader:
             images = images.to(device)
             masks = masks.to(device)
 
-            optim.optimizer.zero_grad()
+            optimizer.zero_grad()
             outputs = model(images)
 
-            outputs = outputs[:, 0]  # "Pet" class probability from sigmoid
             print(f"image shape: {outputs.shape}, mask shape: {masks.shape}")
             loss = criterion.loss(outputs, masks)
 
@@ -81,12 +77,37 @@ def train(training_loader = training_loader,
 
         avg_loss = epoch_loss / len(training_loader)
         losses.append(avg_loss)
-        print(f"📈 Epoch {epoch+1}/{epochs} Complete: Avg Loss = {avg_loss:.4f}")
 
-        # Validiation here
+        print(f" Epoch {epoch+1}/{epochs} Complete: Avg Loss = {avg_loss:.4f}")
 
-    print("✅ Training complete with Attetnion U-Net! ✅")
+        # --- 2. VALIDATION LOOP ---
+        model.eval()   # Set model to evaluation mode
+        epoch_loss_eval = 0
+
+        with torch.no_grad(): 
+            for images, masks in validation_loader:
+                images = images.to(device, dtype=torch.float32)
+                masks = masks.to(device, dtype=torch.float32)
+                
+                # Forward pass only
+                outputs = model(images)
+                outputs = outputs = outputs[:, 0]
+                
+                loss = criterion.loss(outputs, masks)
+                epoch_loss_eval += loss.item()
+
+        avg_loss_eval = epoch_loss_eval / len(validation_loader)
+
+        print(f"📈 Epoch {epoch+1}/{epochs} 📈"
+              f"📈 Training Loss: {avg_loss:.4f} 📈"
+              f"📈 Validation Loss: {avg_loss_eval:.4f} 📈")
+
+    print("✅ Training complete with Attention U-Net! ✅")
+    print("💖 Thank you for standing at attention 💖")
     return losses
+
+# print(training_dataset.__getitem__(0))
+train()
 
 
 
