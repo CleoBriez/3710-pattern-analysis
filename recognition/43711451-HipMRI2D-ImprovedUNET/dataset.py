@@ -89,7 +89,9 @@ def load_data_2D(imageNames, normalise = False, categorical = False, num_classes
     except Exception as e:
         print(f"Error loading template image: {imageNames[0]}. {e}")
         return
-    num = len(imageNames)
+    
+    num = len(imageNames) if first_n == 0 else first_n
+
     first_case = template_nifti.get_fdata(caching="unchanged")
 
     if len(first_case.shape) == 3:
@@ -109,7 +111,7 @@ def load_data_2D(imageNames, normalise = False, categorical = False, num_classes
     else:
         interpolation = "linear"   # Average pixels for smooth image
 
-    for i, inName in enumerate(tqdm(imageNames)):
+    for i, inName in enumerate(tqdm(imageNames[:num])):
         niftiImage = standardise(inName) # Loads the image
         # resampled nifti to match template
         resampled_nifti = resample_to_img(
@@ -125,7 +127,7 @@ def load_data_2D(imageNames, normalise = False, categorical = False, num_classes
         inImage = inImage.astype(dtype)
 
         if normalise and not categorical:
-            # ~ inImage = inImage / np.linalg.norm(inImage )
+            # ~ inImage = inImage / np.linalg.norm(inImage)
             # # ~ inImage = 255. * inImage / inImage.max () 
             inImage = (inImage - inImage.mean()) / inImage.std() 
         elif(normalise and categorical):
@@ -184,7 +186,7 @@ class HipMRI2D(Dataset):
         """
         # Get filename
         image_np = self.dataset[index] # Shape (H, W)
-        mask_np = self.mask[index] # Shape (H, W, C)
+        mask_np = self.mask_data[index] # Shape (H, W, C)
 
         image_tensor = torch.from_numpy(image_np).float()
         mask_tensor = torch.from_numpy(mask_np).float()
@@ -198,4 +200,4 @@ class HipMRI2D(Dataset):
 
 # print(load_data_2D(sorted(Path(path + "train").glob("*.gz")), normalise = True, categorical = False, first_n= 1).shape) # Shape (N, H, W))
 input_dataset = HipMRI2D(dataset = "train", first_n= 20)
-train_loader = DataLoader(input_dataset, batch_size=32, shuffle=True)
+train_loader = DataLoader(input_dataset, batch_size=8, shuffle=True) # I got 8GB VRAM on my GPU
