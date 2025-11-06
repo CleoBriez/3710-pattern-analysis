@@ -23,8 +23,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Hyperparameters
 LEARNING_RATE = 1e-4
-BATCH_SIZE = 8 # I got 8GB VRAM on my GPU
-NUM_EPOCHS = 1
+BATCH_SIZE = 12 # I got 8GB VRAM on my GPU
+NUM_EPOCHS = 25
 NUM_CLASSES = 6
 
 print("💛 Loading training data 💛")
@@ -66,8 +66,10 @@ def train(training_loader = training_loader,
             optimizer.zero_grad()
             outputs = model(images)
 
-            print(f"image shape: {outputs.shape}, mask shape: {masks.shape}")
+            # print(f" [DEBUG 1] image shape: {outputs.shape}, mask shape: {masks.shape}")
             loss = criterion.loss(outputs, masks)
+
+            # print("[DEBUG 2] Passed loss calculation")
 
             # Backward pass
             loss.backward()
@@ -78,7 +80,7 @@ def train(training_loader = training_loader,
         avg_loss = epoch_loss / len(training_loader)
         losses.append(avg_loss)
 
-        print(f" Epoch {epoch+1}/{epochs} Complete: Avg Loss = {avg_loss:.4f}")
+        print(f"▶ Epoch {epoch+1}/{epochs} Complete: Avg Loss = {avg_loss:.4f} ▶️")
 
         # --- 2. VALIDATION LOOP ---
         model.eval()   # Set model to evaluation mode
@@ -91,22 +93,20 @@ def train(training_loader = training_loader,
                 
                 # Forward pass only
                 outputs = model(images)
-                outputs = outputs = outputs[:, 0]
                 
                 loss = criterion.loss(outputs, masks)
                 epoch_loss_eval += loss.item()
 
         avg_loss_eval = epoch_loss_eval / len(validation_loader)
 
-        print(f"📈 Epoch {epoch+1}/{epochs} 📈"
-              f"📈 Training Loss: {avg_loss:.4f} 📈"
-              f"📈 Validation Loss: {avg_loss_eval:.4f} 📈")
+        print(f"📈 Epoch {epoch+1}/{epochs}")
+        print(f"📈 Training Loss: {avg_loss:.4f}")
+        print(f"📈 Validation Loss: {avg_loss_eval:.4f}")
 
     print("✅ Training complete with Attention U-Net! ✅")
     print("💖 Thank you for standing at attention 💖")
     return losses
 
-# print(training_dataset.__getitem__(0))
 train()
 
 
