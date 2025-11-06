@@ -6,11 +6,12 @@ Contains the data loader and preprocessing for the HipMRI 2D Slice Dataset to be
 import utils as util
 import numpy as np
 import nibabel as nib
+from nibabel import Nifti1Image
+from nilearn.image import load_img, resample_to_img
 from tqdm import tqdm
 from pathlib import Path
 import torch
 from torch.utils.data import DataLoader, Dataset
-import torchvision.transforms as transforms
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -23,7 +24,7 @@ __status__ = "Prototype"
 
 path = "D:/keras_slices_data/keras_slices_"  # Adjust this path as needed
 
-def to_channels(arr: np.ndarray, numClasses: int, dtype = np.uint8)-> np.ndarray:
+def to_channels(arr: np.ndarray, num_classes: int, dtype = np.uint8)-> np.ndarray:
     """
     Converts an integer label array into a one-hot encoded array.
     
@@ -35,87 +36,115 @@ def to_channels(arr: np.ndarray, numClasses: int, dtype = np.uint8)-> np.ndarray
     Returns:
         A one-hot encoded array of shape (H, W, num_classes).
     """
-    res = np.zeros(arr.shape +(numClasses,), dtype = dtype)
+    res = np.zeros(arr.shape + (num_classes,), dtype = dtype)
 
-    for c in range(numClasses):
+    for c in range(num_classes):
         # Set the channel 'c' to 1 where the input array has label 'c'
         res[..., c] = (arr == c)
     return res
 
+def standardise(img_path):
+    """
+        Helper for if the file is (H, W, 1), it rebuilds it as (H, W, 1).
+    """
+    nii = nib.load(img_path)
+    
+    if len(nii.shape) == 2:
+        # Data is 2D (H, W). We need to make it 3D (H, W, 1).
+        data_2d = nii.get_fdata(caching="unchanged") # Shape (H, W)
+        data_3d = np.expand_dims(data_2d, axis=-1) # Shape (H, W, 1)
+        
+        # Re-create the NIfTI object with the new 3D data
+        new_nii = Nifti1Image(data_3d, nii.affine, nii.header)
+        
+        # Manually update the header to reflect the 3D shape
+        new_nii.header.set_data_shape(data_3d.shape)
+        return new_nii
+    elif len(nii.shape) == 3:
+        # It's already 3D, just return it.
+        return nii
+    return nii
+
 # load medical image functions
-def load_data_2D(imageNames, normImage = False, categorical = False, numClasses = None, dtype = np.float32, getAffines = False, early_stop = False):
+def load_data_2D(imageNames, normalise = False, categorical = False, num_classes = None, dtype = np.float32, getAffines = False, first_n = 0):
     """
     Load medical image data from names, cases list provided into a list for each.
-    This function pre - allocates 4 D arrays for conv2d to avoid excessive memory usage.
+    Altered to account for slices being different sizes, by resampling to a template image.
     
-    normImage: bool (normalise the image 0.0-1.0)
+    normalise: bool (normalise the image 0.0-1.0)
     categorical: bool (If True, 'num_classes' must also be provided)
-    numClasses: int (The total number of classes for one-hot encoding, e.g., 6)
+    num_classes: int (The total number of classes for one-hot encoding, e.g., 6)
     getAffines: bool (Return the affine matrices along with the images)
-    early_stop: bool (Stop loading pre-maturely, for quick loading and testing scripts)
+    first_n: int (Stop loading after n images for quick loading and testing scripts)
     """
+    # Validate mask and classes inputs
+    if categorical and num_classes is None:
+        raise ValueError("You should specify the number of classes when loading categorical mask data.")
+    
+    affines = [] # Spatial coordinates list
 
-    affines = []
-
-    if categorical and numClasses is None:
-        raise ValueError("You must specify the number of classes when 'categorical=True'")
-
-    # get fixed size
+    # Load a template image to get dimensions
+    try:
+        template_nifti = standardise(imageNames[0])
+    except Exception as e:
+        print(f"Error loading template image: {imageNames[0]}. {e}")
+        return
     num = len(imageNames)
-    first_case = nib.load(imageNames[0]).get_fdata(caching = 'unchanged')
+    first_case = template_nifti.get_fdata(caching="unchanged")
+
     if len(first_case.shape) == 3:
-        first_case = first_case [:,:,0] # sometimes extra dims, remove
+        first_case = first_case [:,:,0] # sometimes extra dims, remove to keep 2D slice
+
     if categorical:
         # first_case = to_channels(first_case, dtype = dtype)
         rows, cols = first_case.shape
-        channels = numClasses
+        channels = num_classes
         images = np.zeros((num, rows, cols, channels), dtype = dtype)
     else:
         rows, cols = first_case.shape
         images = np.zeros((num, rows, cols), dtype = dtype)
 
+    if categorical:
+        interpolation = "nearest"  # Preserve integer labels
+    else:
+        interpolation = "linear"   # Average pixels for smooth image
+
     for i, inName in enumerate(tqdm(imageNames)):
-        niftiImage = nib.load(inName)
-        inImage = niftiImage.get_fdata(caching = 'unchanged') # read disk only
-        affine = niftiImage.affine
+        niftiImage = standardise(inName) # Loads the image
+        # resampled nifti to match template
+        resampled_nifti = resample_to_img(
+            niftiImage, 
+            template_nifti, 
+            interpolation = interpolation
+        )
+        # Get data from the *resampled* image
+        inImage = resampled_nifti.get_fdata(caching='unchanged') # read disk only
+        affine = resampled_nifti.affine
         if len(inImage.shape) == 3:
             inImage = inImage [:,:,0] # sometimes extra dims in HipMRI_study data 
         inImage = inImage.astype(dtype)
-        if normImage:
+
+        if normalise and not categorical:
             # ~ inImage = inImage / np.linalg.norm(inImage )
             # # ~ inImage = 255. * inImage / inImage.max () 
-            inImage =(inImage - inImage.mean())/ inImage.std() 
+            inImage = (inImage - inImage.mean()) / inImage.std() 
+        elif(normalise and categorical):
+            raise ValueError("You probably didn't mean to normalise categorical mask data.")
+
         if categorical:
-            inImage = to_channels(inImage, numClasses = numClasses, dtype=dtype)
-            if inImage.shape[2] != images.shape[3]:
-                 raise ValueError(f"Shape mismatch error on file {inName}. "
-                                  f"Got {inImage.shape[2]} channels, "
-                                  f"expected {images.shape[3]}.")
+            inImage = to_channels(inImage, num_classes = num_classes, dtype = dtype)
             images[i, :, :, :] = inImage
         else:
             images [i,:,:] = inImage 
-        
         affines.append(affine)
-        if i > 20 and early_stop:
+
+        if first_n != 0 and i == first_n:
             break
+
     if getAffines:
         return images, affines
     else:
         return images
-
-def transform(image, size = (256, 256)):
-    """
-    Resample a 2D image to the target shape using torchvision transforms.
-    """
-    transform = transforms.Compose([
-        transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR),
-        transforms.ToPILImage(),
-        transforms.ToTensor()
-    ])
-
-    image_tensor = torch.from_numpy(image).unsqueeze(0)  # Add channel dimension
-    resampled_tensor = transform(image_tensor)
-    return resampled_tensor.squeeze(0).numpy()  # Remove channel dimension
 
 class HipMRI2D(Dataset):
     """
@@ -126,37 +155,47 @@ class HipMRI2D(Dataset):
         path adjusted in the global path variable
         image input is "test", "train" or "validate"
     """
-    def __init__(self, dataset = "train", transform = None):
-        self.dataset = load_data_2D(sorted(Path(path + dataset).glob("*.gz")), normImage = True, categorical = False, early_stop= True)
-        self.mask = load_data_2D(sorted(Path(path + "seg_" + dataset).glob("*.gz")), normImage = False, categorical = True, numClasses = 6, early_stop= True)
-        self.transform = transform
+    def __init__(self, dataset, first_n = 0):
+        """
+        
+        """
+        self.dataset = load_data_2D(sorted(Path(path + dataset).glob("*.gz")), normalise = True, categorical = False, first_n= first_n) # Shape (N, H, W)
+        self.mask_data = load_data_2D(sorted(Path(path + "seg_" + dataset).glob("*.gz")), normalise = False, categorical = True, num_classes = 6, first_n= first_n) # Shape shape (N, H, W, C)
+        self.num_classes = self.mask_data.shape[-1] # Get C from (N, H, W, C)
+
+        print(f"Image array shape: {self.dataset.shape}") # e.g., (100, 256, 128)
+        print(f"Mask array shape: {self.mask_data.shape}")   # e.g., (100, 256, 128, 6)
     
     def __len__(self):
+        """
+        Returns the total number of samples in the dataset.
+        """
         return len(self.dataset)
     
     def __getitem__(self, index):
+        """
+        Retrieve the image and corresponding mask at the specified index.
+        Args:
+            index: Index of the sample to retrieve. 
+        Returns:
+            A tuple (image, mask) where:
+            - image is the preprocessed image tensor.
+            - mask is the binary mask tensor for the hip region.
+        """
         # Get filename
-        image = self.dataset
-        mask = self.mask
-        
-        # Transforms
-        if self.transform:
-            image = transform(image)
+        image_np = self.dataset[index] # Shape (H, W)
+        mask_np = self.mask[index] # Shape (H, W, C)
 
-        mask = transforms.Resize((256, 256), interpolation=transforms.InterpolationMode.NEAREST)(mask)
-        mask_np = np.array(mask)  # Convert PIL to numpy array - this preserves [1,2,3]
-        binary_mask = np.zeros_like(mask_np, dtype=np.uint8)
-        binary_mask[mask_np == 1] = 1  # prostate pixels = 1
-        binary_mask[mask_np == 2] = 0  # background pixels = 0
-        binary_mask[mask_np == 3] = 0  # border pixels -> background (no ignored pixels)
-        binary_mask[mask_np == 4] = 0  # border pixels -> background (no ignored pixels)
-        binary_mask[mask_np == 5] = 0  # border pixels -> background (no ignored pixels)
-        binary_mask[mask_np == 6] = 0  # border pixels -> background (no ignored pixels)
-        
-        # Convert to tensor
-        binary_mask = torch.from_numpy(binary_mask).long()
+        image_tensor = torch.from_numpy(image_np).float()
+        mask_tensor = torch.from_numpy(mask_np).float()
 
-        return image, binary_mask
-    
-Hip = HipMRI2D(dataset = "train", transform = transform)
-HipLoader = DataLoader(Hip, batch_size=32, shuffle=True)
+        image_tensor = image_tensor.unsqueeze(0) # (H, W) -> (1, H, W)
+        
+        # Permute the mask from "channels-last" to "channels-first" becuase PyTorch expects (C, H, W)
+        mask_tensor = mask_tensor.permute(2, 0, 1) # (H, W, C) -> (C, H, W)
+
+        return image_tensor, mask_tensor
+
+# print(load_data_2D(sorted(Path(path + "train").glob("*.gz")), normalise = True, categorical = False, first_n= 1).shape) # Shape (N, H, W))
+input_dataset = HipMRI2D(dataset = "train", first_n= 20)
+train_loader = DataLoader(input_dataset, batch_size=32, shuffle=True)
