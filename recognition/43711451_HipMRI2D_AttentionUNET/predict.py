@@ -21,4 +21,15 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
-module.model.train()  # Call the train function from the train module
+def predict(model = module.model, dataset = data.HipMRI2D(dataset = "test")):
+    """
+    Predict using the trained Attention U-Net model.
+
+    Args:
+        model: The trained Attention U-Net model.
+    """
+    # Define Transformations
+
+    # Apply transformations
+
+    # 

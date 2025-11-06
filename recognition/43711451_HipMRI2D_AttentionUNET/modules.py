@@ -111,7 +111,7 @@ class DoubleConv(nn.Module):
     
 class AttentionUNet(nn.Module):
     """
-    U-Net architecture for image segmentation with Batch Normalization and ReLU activations.
+    U-Net architecture for image segmentation.
     Altered to include Attention Gates in skip connections.
 
     Args:
