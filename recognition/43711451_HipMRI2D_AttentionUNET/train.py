@@ -97,8 +97,8 @@ def train(training_loader = training_loader,
 
         with torch.no_grad(): 
             for images, masks in validation_loader:
-                images = images.to(device, dtype=torch.float32)
-                masks = masks.to(device, dtype=torch.float32)
+                images = images.to(device)
+                masks = masks.to(device)
 
                 # Forward pass only
                 outputs = model(images)
