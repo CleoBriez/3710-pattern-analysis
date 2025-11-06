@@ -1,4 +1,4 @@
-# recognition\43711451-HipMRI3D-ImprovedUNET\modules.py
+# recognition\43711451_HipMRI2D_AttentionUNET\modules.py
 """
 Contains the implementation of the Improved UNet segmentation model to be used for training and prediction
 """

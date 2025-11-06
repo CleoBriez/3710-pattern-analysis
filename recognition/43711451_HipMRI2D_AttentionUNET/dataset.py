@@ -1,4 +1,4 @@
-# recognition\43711451-HipMRI3D-ImprovedUNET\dataset.py
+# recognition\43711451_HipMRI2D_AttentionUNET\dataset.py
 """
 Contains the data loader and preprocessing for the HipMRI 2D Slice Dataset to be used by the model
 """
@@ -45,6 +45,11 @@ def to_channels(arr: np.ndarray, num_classes: int, dtype = np.uint8)-> np.ndarra
 def standardise(img_path):
     """
         Helper for if the file is (H, W, 1), it rebuilds it as (H, W, 1).
+
+        Args:
+            img_path: Path to the NIfTI image file.
+        Returns:
+            A Nifti1Image object with standardized dimensions.
     """
     nii = nib.load(img_path)
     
@@ -70,11 +75,17 @@ def load_data_2D(imageNames, normalise = False, categorical = False, num_classes
     Load medical image data from names, cases list provided into a list for each.
     Altered to account for slices being different sizes, by resampling to a template image.
     
-    normalise: bool (normalise the image 0.0-1.0)
-    categorical: bool (If True, 'num_classes' must also be provided)
-    num_classes: int (The total number of classes for one-hot encoding, e.g., 6)
-    getAffines: bool (Return the affine matrices along with the images)
-    first_n: int (Stop loading after n images for quick loading and testing scripts)
+    Args:
+        imageNames: list of paths to NIfTI image files
+        normalise: bool (normalise the image 0.0-1.0)
+        categorical: bool (If True, 'num_classes' must also be provided)
+        num_classes: int (The total number of classes for one-hot encoding, e.g., 6)
+        getAffines: bool (Return the affine matrices along with the images)
+        first_n: int (Stop loading after n images for quick loading and testing scripts)
+
+    Returns:
+        images: np.ndarray of shape (N, H, W) or (N, H, W, C) depending on 'categorical'
+        affines: list of affine matrices (if getAffines is True)
     """
     # Validate mask and classes inputs
     if categorical and num_classes is None:
@@ -151,14 +162,18 @@ class HipMRI2D(Dataset):
     """
     Dataset class for segmentation for HipMRI 2D dataset. 
 
-    This dataset assumes: 
-        the file structure retrieved from rangpur 
-        path adjusted in the global path variable
-        image input is "test", "train" or "validate"
+    Args:
+        dataset: str, one of "train", "validate", "test" to specify which dataset to load.
+        first_n: int, number of samples to load for quick testing (default: 0, load all).
+    Returns:
+        A PyTorch Dataset object that can be used with DataLoader for training/validation/testing.
     """
     def __init__(self, dataset, first_n = 0):
         """
-        
+        Initialize the HipMRI2D dataset.
+        Args:
+            dataset: str, one of "train", "validate", "test" to specify which dataset to load.
+            first_n: int, number of samples to load for quick testing (default: 0, load all).
         """
         self.dataset = load_data_2D(sorted(Path(path + dataset).glob("*.gz")), normalise = True, categorical = False, first_n= first_n) # Shape (N, H, W)
         self.mask_data = load_data_2D(sorted(Path(path + "seg_" + dataset).glob("*.gz")), normalise = False, categorical = True, num_classes = 6, first_n= first_n) # Shape shape (N, H, W, C)
@@ -170,12 +185,16 @@ class HipMRI2D(Dataset):
     def __len__(self):
         """
         Returns the total number of samples in the dataset.
+
+        Returns:
+            int: Number of samples in the dataset.
         """
         return len(self.dataset)
     
     def __getitem__(self, index):
         """
         Retrieve the image and corresponding mask at the specified index.
+        
         Args:
             index: Index of the sample to retrieve. 
         Returns:
