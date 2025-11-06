@@ -3,15 +3,14 @@
 Contains the data loader and preprocessing for the HipMRI 2D Slice Dataset to be used by the model
 """
 
-import utils as util
 import numpy as np
 import nibabel as nib
 from nibabel import Nifti1Image
-from nilearn.image import load_img, resample_to_img
+from nilearn.image import resample_to_img
 from tqdm import tqdm
 from pathlib import Path
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -197,7 +196,3 @@ class HipMRI2D(Dataset):
         mask_tensor = mask_tensor.permute(2, 0, 1) # (H, W, C) -> (C, H, W)
 
         return image_tensor, mask_tensor
-
-# print(load_data_2D(sorted(Path(path + "train").glob("*.gz")), normalise = True, categorical = False, first_n= 1).shape) # Shape (N, H, W))
-input_dataset = HipMRI2D(dataset = "train", first_n= 20)
-train_loader = DataLoader(input_dataset, batch_size=8, shuffle=True) # I got 8GB VRAM on my GPU
