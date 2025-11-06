@@ -93,7 +93,7 @@ class AttentionUNet(nn.Module):
     Altered to include Attention Gates in skip connections.
     """
 
-    def __init__(self, num_channels, num_classes):
+    def __init__(self, num_channels = 1, num_classes = 6):
         """
         
         """
@@ -213,10 +213,3 @@ class AttentionUNet(nn.Module):
         # ----- Output -----
         logits = self.outc(x)
         return logits
-    
-def denormalize_image(tensor):
-    """Denormalize a tensor image with ImageNet mean and std."""
-    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-    denorm_tensor = tensor * std + mean
-    return torch.clamp(denorm_tensor, 0, 1)

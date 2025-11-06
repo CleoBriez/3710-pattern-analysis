@@ -139,8 +139,10 @@ class Dice(nn.Module):
     Args:
         smooth (float): Smoothing factor to avoid division by zero (default: 1e-6)
     """
-    def __init__(self, smooth=1e-6):
+    def __init__(self, num_classes = 6, apply_softmax=True, smooth=1e-6):
         super(Dice, self).__init__()
+        self.num_classes = num_classes
+        self.apply_softmax = apply_softmax
         self.smooth = smooth
 
     def loss(self, predictions, targets):
@@ -149,16 +151,33 @@ class Dice(nn.Module):
             predictions: Sigmoid output from model [B, H, W] (values between 0-1)
             targets: Binary ground truth [B, H, W] (values 0 or 1)
         """
-        # Flatten tensors using reshape to handle non-contiguous memory layout
-        predictions = predictions.reshape(-1)
-        targets = targets.reshape(-1).float()
+        # Apply softmax if predictions are logits
+        if self.apply_softmax:
+            # Apply softmax across the channel dimension (dim=1)
+            predictions = torch.softmax(predictions, dim=1)
 
-        # Calculate intersection and union
-        intersection = (predictions * targets).sum()
-        dice_coeff = (2.0 * intersection + self.smooth) / (predictions.sum() + targets.sum() + self.smooth)
+        dice_per_class = 0.0
+
+        for i in range(self.num_classes):
+            pred_class = predictions[:, i, :, :]
+            target_class = targets[:, i, :, :]
+
+            # Flatten tensors using reshape to handle non-contiguous memory layout
+            pred_flat = pred_class.reshape(-1)
+            target_flat = target_class.reshape(-1)
+
+            # Calculate intersection and union
+            intersection = (pred_flat * target_flat).sum()
+            dice_sum = pred_flat.sum() + target_flat.sum()
+
+            dice_coeff = (2. * intersection + self.smooth) / (dice_sum + self.smooth)
+
+            dice_per_class += dice_coeff
+        
+        avg_dice = dice_per_class / self.num_classes
 
         # Return Dice Loss (1 - Dice Coefficient)
-        return 1 - dice_coeff
+        return 1 - avg_dice
     
     def coeff(self):
         """
