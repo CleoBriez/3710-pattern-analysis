@@ -19,7 +19,7 @@ __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
 # Device configuration
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Hyperparameters
 LEARNING_RATE = 1e-4
@@ -28,17 +28,17 @@ NUM_EPOCHS = 25
 NUM_CLASSES = 6
 
 print("💛 Loading training data 💛")
-training_dataset = data.HipMRI2D(dataset = "train", first_n= 20)
-training_loader = DataLoader(training_dataset, batch_size=BATCH_SIZE, shuffle=True)
+training_dataset = data.HipMRI2D(dataset = "train", first_n = 20)
+training_loader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = True)
 print("💚 Training data loading complete 💚")
 
 print("💛 Loading validation data 💛")
 validation_dataset = data.HipMRI2D(dataset = "validate", first_n= 20)
-validation_loader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=True)
+validation_loader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = True)
 print("💚 Validation data loading complete 💚")
 
 print(f"💛 Initialising the Attention U-Net model on {device} 💛")
-model = model(num_channels= 1 , num_classes = NUM_CLASSES)
+model = model(num_channels = 1 , num_classes = NUM_CLASSES)
 model.to(device)
 print(f"💚 Model initialisation complete on {device} 💚")
 
@@ -46,10 +46,10 @@ def train(training_loader = training_loader,
             epochs = NUM_EPOCHS,
             model = model, 
             criterion = util.Dice(),
-            optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)):
+            optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)):
     """
     Train the Attention U-Net model with the training and validation data loaders.
-    
+
     Args:
         training_loader: DataLoader for training data.
         epochs: Number of training epochs.
@@ -91,7 +91,7 @@ def train(training_loader = training_loader,
 
         print(f"▶ Epoch {epoch+1}/{epochs} Complete: Avg Loss = {avg_loss:.4f} ▶️")
 
-        # VALIDATION LOOP HERE
+        # Start of Validation Loop
         model.eval()   # Set model to evaluation mode
         epoch_loss_eval = 0
 
@@ -108,7 +108,7 @@ def train(training_loader = training_loader,
 
         avg_loss_eval = epoch_loss_eval / len(validation_loader)
 
-        print(f"📈 Epoch {epoch+1}/{epochs}")
+        print(f"📈 Epoch {epoch+1} / {epochs}")
         print(f"📈 Training Loss: {avg_loss:.4f}")
         print(f"📈 Validation Loss: {avg_loss_eval:.4f}")
 
