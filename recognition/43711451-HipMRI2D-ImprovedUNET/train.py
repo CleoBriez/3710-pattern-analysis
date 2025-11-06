@@ -6,12 +6,11 @@ Contains the main training script for the model
 import utils as util
 import dataset as data
 import modules as module
-from modules import UNet as model
+from modules import AttentionUNet as model
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
-import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -22,59 +21,57 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
-class DiceLoss(nn.Module):
-    """Dice Loss for binary segmentation.
+# Device configuration
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    Dice Loss = 1 - Dice Coefficient
-    Dice Coefficient = (2 * |X ∩ Y|) / (|X| + |Y|)
+# Hyperparameters
+LEARNING_RATE = 1e-4
+BATCH_SIZE = 8 # I got 8GB VRAM on my GPU
+NUM_EPOCHS = 25
+NUM_CLASSES = 6
 
-    Args:
-        smooth (float): Smoothing factor to avoid division by zero (default: 1e-6)
+print("💛 Loading training data 💛")
+training_dataset = data.HipMRI2D(dataset = "train", first_n= 20)
+training_loader = DataLoader(training_dataset, batch_size=8, shuffle=True) 
+print("💚 Training data loading complete 💚")
+
+print("💛 Loading validation data 💛")
+training_dataset = data.HipMRI2D(dataset = "validate", first_n= 20)
+training_loader = DataLoader(training_dataset, batch_size=8, shuffle=True) 
+print("💚 Validation data loading complete 💚")
+
+print(f"💛 Initialising the Attention U-Net model on {device} 💛")
+model = model(num_channels= 1 , num_classes = 6)
+model.to(device)
+print(f"💚 Model initialisation complete on {device} 💚")
+
+def train(training_loader = training_loader, 
+            epochs = 1,
+            model = model, 
+            criterion = util.Dice(),
+            optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)):
     """
-    def __init__(self, smooth=1e-6):
-        super(DiceLoss, self).__init__()
-        self.smooth = smooth
-
-    def forward(self, predictions, targets):
-        """
-        Args:
-            predictions: Sigmoid output from model [B, H, W] (values between 0-1)
-            targets: Binary ground truth [B, H, W] (values 0 or 1)
-        """
-        # Flatten tensors using reshape to handle non-contiguous memory layout
-        predictions = predictions.reshape(-1)
-        targets = targets.reshape(-1).float()
-
-        # Calculate intersection and union
-        intersection = (predictions * targets).sum()
-        dice_coeff = (2.0 * intersection + self.smooth) / (predictions.sum() + targets.sum() + self.smooth)
-
-        # Return Dice Loss (1 - Dice Coefficient)
-        return 1 - dice_coeff
-
-def train(model, train_loader, test_dataset, epochs=3, lr=0.001, visualize_every=1):
-    model.to(util.device)
-    criterion = DiceLoss()
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    Train the Attention U-Net model with Batch Norm, LeakyReLU, and Sigmoid activation.
+    """
 
     losses = []
 
-    print(" Starting training with Batch Norm, LeakyReLU, and Sigmoid activation...")
+    print("🤜 Starting training 🤛")
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
 
         # Training loop with progress
-        for batch_idx, (images, masks) in enumerate(train_loader):
-            images, masks = images.to(util.device), masks.to(util.device)
+        for (images, masks) in enumerate(training_loader):
+            images = images.to(device)
+            masks = masks.to(device)
 
-            optimizer.zero_grad()
+            optim.optimizer.zero_grad()
             outputs = model(images)
 
-            pred_pet = outputs[:, 0]  # Pet class probability from sigmoid
-            #print the shape of pred_pet and masks for debugging
-            # print(f"pred_pet shape: {outputs.shape}, masks shape: {masks.shape}")
-            loss = criterion(pred_pet, masks)
+            outputs = outputs[:, 0]  # "Pet" class probability from sigmoid
+            print(f"image shape: {outputs.shape}, mask shape: {masks.shape}")
+            loss = criterion.loss(outputs, masks)
 
             # Backward pass
             loss.backward()
@@ -82,13 +79,17 @@ def train(model, train_loader, test_dataset, epochs=3, lr=0.001, visualize_every
 
             epoch_loss += loss.item()
 
-        avg_loss = epoch_loss / len(train_loader)
+        avg_loss = epoch_loss / len(training_loader)
         losses.append(avg_loss)
         print(f"📈 Epoch {epoch+1}/{epochs} Complete: Avg Loss = {avg_loss:.4f}")
 
-        # Visualize predictions after each epoch (or every few epochs)
-        if (epoch) % visualize_every == 0:
-            util.how_epoch_predictions(model, test_dataset, epoch + 1, n=3)
+        # Validiation here
 
-    print(" Training complete with enhanced U-Net!")
+    print("✅ Training complete with Attetnion U-Net! ✅")
     return losses
+
+
+
+
+    
+    

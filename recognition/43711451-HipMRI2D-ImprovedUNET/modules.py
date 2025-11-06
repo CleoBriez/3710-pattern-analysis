@@ -220,8 +220,3 @@ def denormalize_image(tensor):
     std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
     denorm_tensor = tensor * std + mean
     return torch.clamp(denorm_tensor, 0, 1)
-
-num_channels = 1 
-num_classes = 6
-
-model = AttentionUNet(num_channels=num_channels, num_classes=num_classes)

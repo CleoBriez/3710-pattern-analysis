@@ -4,6 +4,7 @@ Contains utility functions for the HipMRI 2D Slice Dataset project
 """
 
 import torch
+import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,10 +16,6 @@ __version__ = "0.0.1"
 __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
-
-# Device configuration
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f"Using device: {device}")
 
 # Visualization functions
 def denormalize_image(tensor):
@@ -132,3 +129,39 @@ def plot_loss(losses, loss_type='dice'):
     plt.ylabel('Loss')
     plt.grid(True, alpha=0.3)
     plt.show()
+
+class Dice(nn.Module):
+    """Dice Loss for binary segmentation.
+
+    Dice Loss = 1 - Dice Coefficient
+    Dice Coefficient = (2 * |X ∩ Y|) / (|X| + |Y|)
+
+    Args:
+        smooth (float): Smoothing factor to avoid division by zero (default: 1e-6)
+    """
+    def __init__(self, smooth=1e-6):
+        super(Dice, self).__init__()
+        self.smooth = smooth
+
+    def loss(self, predictions, targets):
+        """
+        Args:
+            predictions: Sigmoid output from model [B, H, W] (values between 0-1)
+            targets: Binary ground truth [B, H, W] (values 0 or 1)
+        """
+        # Flatten tensors using reshape to handle non-contiguous memory layout
+        predictions = predictions.reshape(-1)
+        targets = targets.reshape(-1).float()
+
+        # Calculate intersection and union
+        intersection = (predictions * targets).sum()
+        dice_coeff = (2.0 * intersection + self.smooth) / (predictions.sum() + targets.sum() + self.smooth)
+
+        # Return Dice Loss (1 - Dice Coefficient)
+        return 1 - dice_coeff
+    
+    def coeff(self):
+        """
+        Returns the Dice Coefficient.
+        """
+        return 1 - self.loss
