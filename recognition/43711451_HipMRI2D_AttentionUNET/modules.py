@@ -36,22 +36,22 @@ class AttentionGate(nn.Module):
         """
         super(AttentionGate, self).__init__()
         self.gating_signal = nn.Sequential(
-            nn.Conv2d(gating_channels, inter_channels, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(gating_channels, inter_channels, kernel_size = 1, stride = 1, padding = 0, bias = True),
             nn.BatchNorm2d(inter_channels)
         )
 
         self.skip_connection = nn.Sequential(
-            nn.Conv2d(skip_channels, inter_channels, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(skip_channels, inter_channels, kernel_size = 1, stride = 1, padding = 0, bias = True),
             nn.BatchNorm2d(inter_channels)
         )
 
         self.attention_map = nn.Sequential(
-            nn.Conv2d(inter_channels, 1, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(inter_channels, 1, kernel_size = 1, stride = 1, padding = 0, bias = True),
             nn.BatchNorm2d(1),
             nn.Sigmoid()
         )
 
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU(inplace = True)
 
     def forward(self, g, x):
         """
@@ -87,12 +87,12 @@ class DoubleConv(nn.Module):
         super().__init__()
         self.double_conv = nn.Sequential(
             # First convolution
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, out_channels, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             
             # Second convolution
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(out_channels, out_channels, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
@@ -141,22 +141,22 @@ class AttentionUNet(nn.Module):
         self.down3 = DoubleConv(256, 512)
         self.down4 = DoubleConv(512, 1024) # The bottleneck
         # Max pooling for down-sampling
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
 
         # -----------------
         # Decoder (Up Path)
         # -----------------
         # ConvTranspose2d for up-sampling doubles the H/W and halves the channels.
-        self.up1 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
+        self.up1 = nn.ConvTranspose2d(1024, 512, kernel_size = 2, stride = 2)
         self.conv1 = DoubleConv(1024, 512) # 512 (from up) + 512 (from skip) = 1024
 
-        self.up2 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
+        self.up2 = nn.ConvTranspose2d(512, 256, kernel_size = 2, stride = 2)
         self.conv2 = DoubleConv(512, 256) # 256 (from up) + 256 (from skip) = 512
 
-        self.up3 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
+        self.up3 = nn.ConvTranspose2d(256, 128, kernel_size = 2, stride = 2)
         self.conv3 = DoubleConv(256, 128) # 128 (from up) + 128 (from skip) = 256
 
-        self.up4 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
+        self.up4 = nn.ConvTranspose2d(128, 64, kernel_size = 2, stride = 2)
         self.conv4 = DoubleConv(128, 64) # 64 (from up) + 64 (from skip) = 128
 
         # -----------------
@@ -169,10 +169,10 @@ class AttentionUNet(nn.Module):
         # gating_channels = channels from decoder (up-sampled)
         # skip_channels = channels from encoder (skip connection)
         # inter_channels = intermediate channels (can be half of skip_channels)
-        self.Att1 = AttentionGate(gating_channels=512, skip_channels=512, inter_channels=256)
-        self.Att2 = AttentionGate(gating_channels=256, skip_channels=256, inter_channels=128)
-        self.Att3 = AttentionGate(gating_channels=128, skip_channels=128, inter_channels=64)
-        self.Att4 = AttentionGate(gating_channels=64, skip_channels=64, inter_channels=32)
+        self.Att1 = AttentionGate(gating_channels = 512, skip_channels = 512, inter_channels = 256)
+        self.Att2 = AttentionGate(gating_channels = 256, skip_channels = 256, inter_channels = 128)
+        self.Att3 = AttentionGate(gating_channels = 128, skip_channels = 128, inter_channels = 64)
+        self.Att4 = AttentionGate(gating_channels = 64, skip_channels = 64, inter_channels = 32)
 
     def forward(self, x):
         """
@@ -188,62 +188,58 @@ class AttentionUNet(nn.Module):
 
     # ----- Encoder -----
     # We save the output of each encoder block to use in the skip connections
-        x1 = self.inc(x)     # -> (B, 64, 256, 256)
-        x2 = self.pool(x1)   # -> (B, 64, 128, 128)
-        x2 = self.down1(x2)  # -> (B, 128, 128, 128)
+        x1 = self.inc(x)    # -> (B, 64, 256, 256)
+        x2 = self.pool(x1)  # -> (B, 64, 128, 128)
+        x2 = self.down1(x2) # -> (B, 128, 128, 128)
         
-        x3 = self.pool(x2)   # -> (B, 128, 64, 64)
-        x3 = self.down2(x3)  # -> (B, 256, 64, 64)
+        x3 = self.pool(x2)  # -> (B, 128, 64, 64)
+        x3 = self.down2(x3) # -> (B, 256, 64, 64)
         
-        x4 = self.pool(x3)   # -> (B, 256, 32, 32)
-        x4 = self.down3(x4)  # -> (B, 512, 32, 32)
+        x4 = self.pool(x3)  # -> (B, 256, 32, 32)
+        x4 = self.down3(x4) # -> (B, 512, 32, 32)
         
-        x5 = self.pool(x4)   # -> (B, 512, 16, 16)
-        x5 = self.down4(x5)  # -> (B, 1024, 16, 16) - This is the bottleneck
+        x5 = self.pool(x4)  # -> (B, 512, 16, 16)
+        x5 = self.down4(x5) # -> (B, 1024, 16, 16) - This is the bottleneck
 
         # ----- Decoder -----
-        # In each step, we up-sample, concatenate with the skip connection,
-        # and then pass through the DoubleConv block.
 
-        # Step 1
-        up_x = self.up1(x5)      # (B, 512, H/8, W/8)
+        up_x = self.up1(x5) # (B, 512, H/8, W/8)
         
         # --- ATTENTION GATE ---
         # 'g' is the gating signal from decoder, 'x' is the skip connection
-        x4_att = self.Att1(g=up_x, x=x4)
+        x4_att = self.Att1(g = up_x, x = x4)
         # --- (End Gate) ---
         
-        skip_x = torch.cat([x4_att, up_x], dim=1) # Concatenate re-weighted skip
+        skip_x = torch.cat([x4_att, up_x], dim = 1) # Concatenate re-weighted skip
         x = self.conv1(skip_x)
 
-        # Step 2
-        up_x = self.up2(x)       # (B, 256, H/4, W/4)
+        up_x = self.up2(x)  # (B, 256, H/4, W/4)
         
         # --- ATTENTION GATE ---
-        x3_att = self.Att2(g=up_x, x=x3)
+        x3_att = self.Att2(g = up_x, x = x3)
         # --- (End Gate) ---
         
-        skip_x = torch.cat([x3_att, up_x], dim=1)
+        skip_x = torch.cat([x3_att, up_x], dim = 1)
         x = self.conv2(skip_x)
 
         # Step 3
         up_x = self.up3(x)       # (B, 128, H/2, W/2)
         
         # --- ATTENTION GATE ---
-        x2_att = self.Att3(g=up_x, x=x2)
+        x2_att = self.Att3(g = up_x, x = x2)
         # --- (End Gate) ---
         
-        skip_x = torch.cat([x2_att, up_x], dim=1)
+        skip_x = torch.cat([x2_att, up_x], dim = 1)
         x = self.conv3(skip_x)
         
         # Step 4
         up_x = self.up4(x)       # (B, 64, H, W)
         
         # --- ATTENTION GATE ---
-        x1_att = self.Att4(g=up_x, x=x1)
+        x1_att = self.Att4(g = up_x, x = x1)
         # --- (End Gate) ---
         
-        skip_x = torch.cat([x1_att, up_x], dim=1)
+        skip_x = torch.cat([x1_att, up_x], dim = 1)
         x = self.conv4(skip_x)
 
         # ----- Output -----

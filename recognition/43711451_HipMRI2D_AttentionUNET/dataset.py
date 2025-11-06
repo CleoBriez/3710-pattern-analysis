@@ -55,8 +55,8 @@ def standardise(img_path):
     
     if len(nii.shape) == 2:
         # Data is 2D (H, W). We need to make it 3D (H, W, 1).
-        data_2d = nii.get_fdata(caching="unchanged") # Shape (H, W)
-        data_3d = np.expand_dims(data_2d, axis=-1) # Shape (H, W, 1)
+        data_2d = nii.get_fdata(caching = "unchanged") # Shape (H, W)
+        data_3d = np.expand_dims(data_2d, axis = -1) # Shape (H, W, 1)
         
         # Re-create the NIfTI object with the new 3D data
         new_nii = Nifti1Image(data_3d, nii.affine, nii.header)
@@ -130,7 +130,7 @@ def load_data_2D(imageNames, normalise = False, categorical = False, num_classes
             interpolation = interpolation
         )
         # Get data from the *resampled* image
-        inImage = resampled_nifti.get_fdata(caching='unchanged') # read disk only
+        inImage = resampled_nifti.get_fdata(caching = "unchanged") # read disk only
         affine = resampled_nifti.affine
         if len(inImage.shape) == 3:
             inImage = inImage [:,:,0] # sometimes extra dims in HipMRI_study data 
@@ -175,8 +175,8 @@ class HipMRI2D(Dataset):
             dataset: str, one of "train", "validate", "test" to specify which dataset to load.
             first_n: int, number of samples to load for quick testing (default: 0, load all).
         """
-        self.dataset = load_data_2D(sorted(Path(path + dataset).glob("*.gz")), normalise = True, categorical = False, first_n= first_n) # Shape (N, H, W)
-        self.mask_data = load_data_2D(sorted(Path(path + "seg_" + dataset).glob("*.gz")), normalise = False, categorical = True, num_classes = 6, first_n= first_n) # Shape shape (N, H, W, C)
+        self.dataset = load_data_2D(sorted(Path(path + dataset).glob("*.gz")), normalise = True, categorical = False, first_n = first_n) # Shape (N, H, W)
+        self.mask_data = load_data_2D(sorted(Path(path + "seg_" + dataset).glob("*.gz")), normalise = False, categorical = True, num_classes = 6, first_n = first_n) # Shape shape (N, H, W, C)
         self.num_classes = self.mask_data.shape[-1] # Get C from (N, H, W, C)
 
         print(f"Image array shape: {self.dataset.shape}") # e.g., (100, 256, 128)
@@ -194,7 +194,7 @@ class HipMRI2D(Dataset):
     def __getitem__(self, index):
         """
         Retrieve the image and corresponding mask at the specified index.
-        
+
         Args:
             index: Index of the sample to retrieve. 
         Returns:
