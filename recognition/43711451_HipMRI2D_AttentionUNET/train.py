@@ -1,4 +1,4 @@
-# recognition\43711451-HipMRI3D-ImprovedUNET\train.py
+# recognition\43711451_HipMRI2D_AttentionUNET\train.py
 """
 Contains the main training script for the model
 """
@@ -23,18 +23,18 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Hyperparameters
 LEARNING_RATE = 1e-4
-BATCH_SIZE = 12 # I got 8GB VRAM on my GPU
+BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
 NUM_EPOCHS = 25
 NUM_CLASSES = 6
 
 print("💛 Loading training data 💛")
 training_dataset = data.HipMRI2D(dataset = "train", first_n= 20)
-training_loader = DataLoader(training_dataset, batch_size=BATCH_SIZE, shuffle=True) 
+training_loader = DataLoader(training_dataset, batch_size=BATCH_SIZE, shuffle=True)
 print("💚 Training data loading complete 💚")
 
 print("💛 Loading validation data 💛")
 validation_dataset = data.HipMRI2D(dataset = "validate", first_n= 20)
-validation_loader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=True) 
+validation_loader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=True)
 print("💚 Validation data loading complete 💚")
 
 print(f"💛 Initialising the Attention U-Net model on {device} 💛")
@@ -82,7 +82,7 @@ def train(training_loader = training_loader,
 
         print(f"▶ Epoch {epoch+1}/{epochs} Complete: Avg Loss = {avg_loss:.4f} ▶️")
 
-        # --- 2. VALIDATION LOOP ---
+        # VALIDATION LOOP HERE
         model.eval()   # Set model to evaluation mode
         epoch_loss_eval = 0
 
@@ -90,10 +90,10 @@ def train(training_loader = training_loader,
             for images, masks in validation_loader:
                 images = images.to(device, dtype=torch.float32)
                 masks = masks.to(device, dtype=torch.float32)
-                
+
                 # Forward pass only
                 outputs = model(images)
-                
+
                 loss = criterion.loss(outputs, masks)
                 epoch_loss_eval += loss.item()
 
@@ -106,11 +106,3 @@ def train(training_loader = training_loader,
     print("✅ Training complete with Attention U-Net! ✅")
     print("💖 Thank you for standing at attention 💖")
     return losses
-
-train()
-
-
-
-
-    
-    
