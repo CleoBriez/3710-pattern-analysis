@@ -5,8 +5,6 @@ Contains utility functions for the HipMRI 2D Slice Dataset project
 
 import torch
 import torch.nn as nn
-import numpy as np
-import matplotlib.pyplot as plt
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"

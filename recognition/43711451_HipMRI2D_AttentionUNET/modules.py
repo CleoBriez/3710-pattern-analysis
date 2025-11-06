@@ -3,11 +3,8 @@
 Contains the implementation of the Improved UNet segmentation model to be used for training and prediction
 """
 
-import utils as util
-import dataset as data
 import torch
 import torch.nn as nn
-import torch.nn.functional as funcy
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -21,6 +18,7 @@ __status__ = "Prototype"
 class AttentionGate(nn.Module):
     """
     Attention Gate for U-Net skip connections.
+
     Args:
             gating_channels: Number of channels in the gating signal (from decoder).
             skip_channels: Number of channels in the skip connection (from encoder).
@@ -29,7 +27,12 @@ class AttentionGate(nn.Module):
 
     def __init__(self, gating_channels, skip_channels, inter_channels):
         """
-        
+        Initialise the Attention Gate.
+
+        Args:
+            gating_channels: Number of channels in the gating signal (from decoder).    
+            skip_channels: Number of channels in the skip connection (from encoder).
+            inter_channels: Number of intermediate channels.
         """
         super(AttentionGate, self).__init__()
         self.gating_signal = nn.Sequential(
@@ -52,6 +55,8 @@ class AttentionGate(nn.Module):
 
     def forward(self, g, x):
         """
+        Forward pass of the Attention Gate.
+
         Args:
             g: Gating signal (from decoder)
             x: Skip connection (from encoder)
@@ -65,11 +70,19 @@ class AttentionGate(nn.Module):
 class DoubleConv(nn.Module):
     """
     (Convolution -> BatchNorm -> ReLU) * 2
+
+    Args:
+        in_channels: Number of input channels.
+        out_channels: Number of output channels.
     """
 
     def __init__(self, in_channels, out_channels):
         """
+        Initialise the Double Convolution block.
         
+        Args:
+            in_channels: Number of input channels.
+            out_channels: Number of output channels.
         """
         super().__init__()
         self.double_conv = nn.Sequential(
@@ -85,21 +98,38 @@ class DoubleConv(nn.Module):
         )
 
     def forward(self, x):
+        """
+        Forward pass of the Double Convolution block.
+
+        Args:
+            x: Input tensor.
+
+        Returns:
+            Output tensor after two convolutions.
+        """
         return self.double_conv(x)
     
 class AttentionUNet(nn.Module):
     """
     U-Net architecture for image segmentation with Batch Normalization and ReLU activations.
     Altered to include Attention Gates in skip connections.
+
+    Args:
+        num_channels: Number of input image channels (Keeping it at one since the MRIs are going to be greyscale).
+        num_classes: Number of output classes (we going 6 for this one).
     """
 
     def __init__(self, num_channels = 1, num_classes = 6):
         """
-        
+        Initialise the Attention U-Net model.
+
+        Args:
+            num_channels: Number of input image channels.
+            num_classes: Number of output classes.
         """
         super(AttentionUNet, self).__init__()
-        self.num_channels = num_channels  # Input image channels (e.g., 1 for grayscale, 3 for RGB)
-        self.num_classes = num_classes    # Output classes (e.g., 1 for binary, 2+ for multiclass)
+        self.num_channels = num_channels
+        self.num_classes = num_classes 
 
         # -----------------
         # Encoder (Down Path)
@@ -146,7 +176,13 @@ class AttentionUNet(nn.Module):
 
     def forward(self, x):
         """
-        
+        Forward pass of the Attention U-Net model.
+
+        Args:
+            x: Input image tensor.
+
+        Returns:
+            logits: Output segmentation logits.
         """
     # x is the input image, e.g., (BatchSize, 3, 256, 256)
 
