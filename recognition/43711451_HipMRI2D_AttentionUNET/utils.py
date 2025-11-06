@@ -17,23 +17,14 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
-# Visualization functions
-def denormalize_image(tensor):
-    """
-    Denormalize a tensor image with mean and std.
-    """
-    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-    denorm_tensor = tensor * std + mean
-    return torch.clamp(denorm_tensor, 0, 1)
-
 class Dice(nn.Module):
-    """Dice Loss for binary segmentation.
-
-    Dice Loss = 1 - Dice Coefficient
+    """
     Dice Coefficient = (2 * |X ∩ Y|) / (|X| + |Y|)
+    Dice Loss = 1 - Dice Coefficient
 
     Args:
+        num_classes: int, number of classes for segmentation.
+        apply_softmax: bool, whether to apply softmax to predictions.
         smooth (float): Smoothing factor to avoid division by zero (default: 1e-6)
     """
     def __init__(self, num_classes = 6, apply_softmax=True, smooth=1e-6):
@@ -44,9 +35,14 @@ class Dice(nn.Module):
 
     def loss(self, predictions, targets):
         """
+        Dice Loss calculation.
+
         Args:
-            predictions: Sigmoid output from model [B, H, W] (values between 0-1)
-            targets: Binary ground truth [B, H, W] (values 0 or 1)
+            predictions: Raw logits from model [B, C, H, W]
+            targets: One-hot encoded ground truth [B, C, H, W]
+
+        Returns:
+            Dice Loss value.
         """
         # Apply softmax if predictions are logits
         if self.apply_softmax:
@@ -79,5 +75,8 @@ class Dice(nn.Module):
     def coeff(self):
         """
         Returns the Dice Coefficient.
+
+        Returns:
+            Dice Coefficient value.
         """
         return 1 - self.loss
