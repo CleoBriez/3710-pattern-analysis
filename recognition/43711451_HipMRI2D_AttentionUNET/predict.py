@@ -1,8 +1,7 @@
-# recognition\43711451_HipMRI2D_AttentionUNET\predict.py
+# recognition/43711451_HipMRI2D_AttentionUNET/predict.py
 """
 Contains the main prediction script for the model after training
 """
-
 
 import torch
 import numpy as np
@@ -10,6 +9,7 @@ from dataset import standardise, resample_to_img
 from modules import AttentionUNet as model 
 import nibabel as nib
 from nibabel import Nifti1Image
+from matplotlib import pyplot as plt
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -29,25 +29,27 @@ SUBSET = 0
 NUM_CLASSES = 6
 NUM_EPOCHS = 25
 LEARNING_RATE = 1e-4
-SAVED_MODEL_PATH = "recognition/43711451_HipMRI2D_AttentionUNET/saved_model/final_model_weights.pth"
+SAVED_MODEL_PATH = "C:/Users/cleod/OneDrive/Documents/Work/UQ/COMP3710/Python Workspace/3710-pattern-analysis/recognition/43711451_HipMRI2D_AttentionUNET/saved_models/full_set_5_epochs.pth"
 TEMPLATE_IMG_PATH = "D:/keras_slices_data/keras_slices_train/case_004_week_0_slice_0.nii.gz"
-INPUT_IMG_PATH = "D:/keras_slices_data/keras_slices_test/"
-OUTPUT_MASK_PATH = "recognition/43711451_HipMRI2D_AttentionUNET/mask_output"
+INPUT_IMG_PATH = "D:/keras_slices_data/keras_slices_test/case_040_week_0_slice_0.nii.gz"
+OUTPUT_MASK_PATH = "C:/Users/cleod/OneDrive/Documents/Work/UQ/COMP3710/Python Workspace/3710-pattern-analysis/recognition/43711451_HipMRI2D_AttentionUNET/mask_output/pred_mask_case_040_week_1_slice_0.nii.gz"
 
 def predict(model, image_path, template):
     """
     Runs inference on a single NIfTI image, replicating the training pre-processing.
     
     Args:
-
+        model: The trained Attention U-Net model.
+        image_path: Path to the input NIfTI image.
+        template: Nifti1Image template for resampling.
     Returns:
-
+        pred_mask_np: NumPy array of the predicted mask.
     """
     
     print(f"Processing: {image_path}")
     
     # Load & Standardise
-    nifti_image = standardise(image_path[0])
+    nifti_image = standardise(image_path)
     
     # Resample
     resampled_nifti = resample_to_img(nifti_image, template, interpolation="linear")
@@ -98,6 +100,59 @@ def predict(model, image_path, template):
     # Return the mask AND the spatial info for saving
     return pred_mask_np, resampled_nifti.affine, resampled_nifti.header
 
+def visualize_prediction(image_path, template, pred_mask):
+    """
+    Visualises the original image, the predicted mask, and an overlay.
+
+    Args:
+        image_path: Path to the original image.
+        template: Nifti1Image template for resampling.
+        pred_mask: NumPy array of the predicted mask.
+    """
+
+    # Load & Resample original image
+    nii = standardise(image_path)
+    resampled_nii = resample_to_img(nii, template, interpolation="linear")
+    image_np = resampled_nii.get_fdata(caching="unchanged")
+    
+    # Handle 3D (H, W, 1) -> 2D (H, W)
+    if len(image_np.shape) == 3:
+        image_np = image_np[:,:,0]
+
+    # Load mask
+    mask_nii = nib.load(pred_mask)
+    mask_np = mask_nii.get_fdata()
+
+    plt.figure(figsize=(18, 6))
+    plt.suptitle(f"{INPUT_IMG_PATH.partition('D:/keras_slices_data/keras_slices_test/')[2]}", fontsize=16)
+    # Original Image
+    plt.subplot(1, 3, 1)
+    plt.title("MRI Slice")
+    plt.imshow(image_np, cmap='gray') # Grayscale for the photo
+    plt.axis('off')
+
+    # Predicted Mask
+    plt.subplot(1, 3, 2)
+    plt.title("Predicted Mask")
+    plt.imshow(mask_np, cmap='viridis')
+    plt.axis('off')
+
+    # Overlay
+    plt.subplot(1, 3, 3)
+    plt.title("Mask Overlay on MRI")
+    plt.imshow(image_np, cmap='gray')
+    
+    mask_np_masked = np.ma.masked_where(mask_np == 0, mask_np)
+    plt.imshow(mask_np_masked, cmap='viridis', alpha=0.6)
+    plt.axis('off')
+
+    plt.tight_layout()
+    # Save the figure
+    # output_fig_path = Path(predicted_mask_path).with_suffix('.png')
+    # plt.savefig(output_fig_path, dpi=300)
+    # print(f"Visualization saved to {output_fig_path}")
+    plt.show()
+
 if __name__ == "__main__":
     print(f"💛 Initialising the Attention U-Net model from path:{SAVED_MODEL_PATH} on {device} 💛")
     model = model(num_channels = 1, num_classes = NUM_CLASSES)
@@ -136,6 +191,12 @@ if __name__ == "__main__":
         nib.save(mask_nii, OUTPUT_MASK_PATH)
         
         print(f"Prediction complete. Mask saved to {OUTPUT_MASK_PATH}")
+
+        visualize_prediction(
+            image_path = INPUT_IMG_PATH,
+            template = template,
+            pred_mask = OUTPUT_MASK_PATH,
+        )
 
     except FileNotFoundError:
         print(f"Error: Input image not found at {INPUT_IMG_PATH}")

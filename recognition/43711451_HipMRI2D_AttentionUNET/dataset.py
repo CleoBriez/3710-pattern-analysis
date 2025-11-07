@@ -34,7 +34,7 @@ def to_channels(arr: np.ndarray, num_classes: int, dtype = np.uint8)-> np.ndarra
     
     Args:
         arr: The input 2D mask array (H, W).
-        num_classes: The total number of classes (e.g., 6).
+        num_classes: The total number of classes.
         dtype: The data type of the output array.
         
     Returns:
@@ -272,4 +272,3 @@ if __name__ == "__main__":
     print("💛 Loading validation data 💛")
     LoadData(dataset = "validate", first_n = SUBSET, batch_size = BATCH_SIZE, shuffle = False)
     print("💚 Validation data loading complete 💚")
-    

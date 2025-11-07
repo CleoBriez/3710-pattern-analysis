@@ -33,9 +33,9 @@ if torch.cuda.is_available():
 BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
 SUBSET = 0
 NUM_CLASSES = 6
-NUM_EPOCHS = 25
+NUM_EPOCHS = 10
 LEARNING_RATE = 1e-4
-SAVED_MODEL_PATH = "recognition\43711451_HipMRI2D_AttentionUNET\saved_model\final_model_weights.pth"
+SAVED_MODEL_PATH = "C:/Users/cleod/OneDrive/Documents/Work/UQ/COMP3710/Python Workspace/3710-pattern-analysis/recognition/43711451_HipMRI2D_AttentionUNET/saved_models/full_set_x_epochs.pth"
 
 def train(training_loader = None,
             validation_loader = None, 

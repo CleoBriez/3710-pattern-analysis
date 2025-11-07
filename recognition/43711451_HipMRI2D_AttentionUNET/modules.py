@@ -97,7 +97,7 @@ class DoubleConv(nn.Module):
             nn.Conv2d(in_channels, out_channels, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            
+
             # Second convolution
             nn.Conv2d(out_channels, out_channels, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(out_channels),
@@ -138,9 +138,7 @@ class AttentionUNet(nn.Module):
         self.num_channels = num_channels
         self.num_classes = num_classes 
 
-        # -----------------
         # Encoder (Down Path)
-        # -----------------
         # Each 'inc', 'down1', 'down2', etc., is a "step" in the U.
         self.inc = DoubleConv(num_channels, 64)
         self.down1 = DoubleConv(64, 128)
@@ -150,9 +148,7 @@ class AttentionUNet(nn.Module):
         # Max pooling for down-sampling
         self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
 
-        # -----------------
         # Decoder (Up Path)
-        # -----------------
         # ConvTranspose2d for up-sampling doubles the H/W and halves the channels.
         self.up1 = nn.ConvTranspose2d(1024, 512, kernel_size = 2, stride = 2)
         self.conv1 = DoubleConv(1024, 512) # 512 (from up) + 512 (from skip) = 1024
@@ -166,13 +162,11 @@ class AttentionUNet(nn.Module):
         self.up4 = nn.ConvTranspose2d(128, 64, kernel_size = 2, stride = 2)
         self.conv4 = DoubleConv(128, 64) # 64 (from up) + 64 (from skip) = 128
 
-        # -----------------
         # Output Layer
-        # -----------------
         # Final 1x1 convolution to map to the number of classes
         self.outc = nn.Conv2d(64, num_classes, kernel_size=1)
 
-        # --- ADD THE ATTENTION GATES ---
+        # ATTENTION GATES
         # gating_channels = channels from decoder (up-sampled)
         # skip_channels = channels from encoder (skip connection)
         # inter_channels = intermediate channels (can be half of skip_channels)
@@ -193,7 +187,7 @@ class AttentionUNet(nn.Module):
         """
     # x is the input image, e.g., (BatchSize, 3, 256, 256)
 
-    # ----- Encoder -----
+    # Encoder
     # We save the output of each encoder block to use in the skip connections
         x1 = self.inc(x)    # -> (B, 64, 256, 256)
         x2 = self.pool(x1)  # -> (B, 64, 128, 128)
@@ -208,23 +202,20 @@ class AttentionUNet(nn.Module):
         x5 = self.pool(x4)  # -> (B, 512, 16, 16)
         x5 = self.down4(x5) # -> (B, 1024, 16, 16) - This is the bottleneck
 
-        # ----- Decoder -----
-
+        # Decoder
         up_x = self.up1(x5) # (B, 512, H/8, W/8)
         
-        # --- ATTENTION GATE ---
+        # ATTENTION GATE
         # 'g' is the gating signal from decoder, 'x' is the skip connection
         x4_att = self.Att1(g = up_x, x = x4)
-        # --- (End Gate) ---
         
         skip_x = torch.cat([x4_att, up_x], dim = 1) # Concatenate re-weighted skip
         x = self.conv1(skip_x)
 
         up_x = self.up2(x)  # (B, 256, H/4, W/4)
         
-        # --- ATTENTION GATE ---
+        # ATTENTION GATE
         x3_att = self.Att2(g = up_x, x = x3)
-        # --- (End Gate) ---
         
         skip_x = torch.cat([x3_att, up_x], dim = 1)
         x = self.conv2(skip_x)
@@ -232,9 +223,8 @@ class AttentionUNet(nn.Module):
         # Step 3
         up_x = self.up3(x)       # (B, 128, H/2, W/2)
         
-        # --- ATTENTION GATE ---
+        # ATTENTION GATE
         x2_att = self.Att3(g = up_x, x = x2)
-        # --- (End Gate) ---
         
         skip_x = torch.cat([x2_att, up_x], dim = 1)
         x = self.conv3(skip_x)
@@ -242,14 +232,13 @@ class AttentionUNet(nn.Module):
         # Step 4
         up_x = self.up4(x)       # (B, 64, H, W)
         
-        # --- ATTENTION GATE ---
+        # ATTENTION GATE
         x1_att = self.Att4(g = up_x, x = x1)
-        # --- (End Gate) ---
         
         skip_x = torch.cat([x1_att, up_x], dim = 1)
         x = self.conv4(skip_x)
 
-        # ----- Output -----
+        # Output Layer
         logits = self.outc(x)
         return logits
 
@@ -258,4 +247,3 @@ if __name__ == "__main__":
     model = AttentionUNet(num_channels = 1 , num_classes = NUM_CLASSES)
     model.to(device)
     print(f"💚 Model initialisation complete on {device} 💚")
-    
