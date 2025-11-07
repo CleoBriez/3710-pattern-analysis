@@ -31,7 +31,7 @@ class Dice(nn.Module):
         self.apply_softmax = apply_softmax
         self.smooth = smooth
 
-    def loss(self, predictions, targets):
+    def forward(self, predictions, targets):
         """
         Dice Loss calculation.
 
@@ -69,12 +69,3 @@ class Dice(nn.Module):
 
         # Return Dice Loss (1 - Dice Coefficient)
         return 1 - avg_dice
-    
-    def coeff(self):
-        """
-        Returns the Dice Coefficient.
-
-        Returns:
-            Dice Coefficient value.
-        """
-        return 1 - self.loss

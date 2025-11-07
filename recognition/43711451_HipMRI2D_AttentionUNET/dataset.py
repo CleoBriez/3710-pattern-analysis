@@ -26,7 +26,7 @@ path = "D:/keras_slices_data/keras_slices_"  # Adjust this path as needed
 
 # Hyperparameters
 BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
-NUM_CLASSES = 6
+SUBSET = 25
 
 def to_channels(arr: np.ndarray, num_classes: int, dtype = np.uint8)-> np.ndarray:
     """
@@ -232,14 +232,43 @@ class HipMRI2D(Dataset):
     
     def get_std(self):
         return np.std(self.dataset)
+    
+class LoadData(DataLoader):
+    """
+    Custom DataLoader for the HipMRI2D dataset.
+    Inherits from torch.utils.data.DataLoader.
+    """
+    def __init__(self, dataset, first_n = SUBSET, batch_size=BATCH_SIZE, shuffle = True):
+        """
+        Initialize the DataLoader.
+
+        Args:
+            dataset: An instance of the HipMRI2D dataset.
+            batch_size: Number of samples per batch to load (default: 16).
+            shuffle: Whether to shuffle the data at every epoch (default: True).
+        """
+        super().__init__(dataset=HipMRI2D(dataset, first_n = first_n), batch_size=batch_size, shuffle=shuffle)
+
+    def __getitem__(self, dataset = "train"):
+        """
+        Load the dataset and return a DataLoader.
+
+        Args:
+            dataset: str, one of "train", "validate", "test" to specify which dataset to load.
+
+        Returns:
+            A DataLoader object for the specified dataset.
+        """
+        retrieved_dataset = HipMRI2D(dataset, first_n = SUBSET)
+        loaded_data = DataLoader(retrieved_dataset, batch_size = BATCH_SIZE, shuffle = True)
+
+        return loaded_data
 
 if __name__ == "__main__":
     print("💛 Loading training data 💛")
-    training_dataset = HipMRI2D(dataset = "train", first_n = 20)
-    training_loader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = True)
+    LoadData(dataset = "train", first_n = SUBSET, batch_size = BATCH_SIZE, shuffle = True)
     print("💚 Training data loading complete 💚")
 
     print("💛 Loading validation data 💛")
-    validation_dataset = HipMRI2D(dataset = "validate", first_n= 20)
-    validation_loader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = False)
+    LoadData(dataset = "validate", first_n = SUBSET, batch_size = BATCH_SIZE, shuffle = False)
     print("💚 Validation data loading complete 💚")

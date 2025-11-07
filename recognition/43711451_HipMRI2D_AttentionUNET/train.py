@@ -4,8 +4,10 @@ Contains the main training script for the model
 """
 
 from utils import Dice
-from dataset import HipMRI2D, DataLoader
+from dataset import HipMRI2D, LoadData
 from modules import AttentionUNet as model
+import numpy as np
+import random
 import torch
 
 __author__ = "Cleodora Kizmann"
@@ -20,12 +22,19 @@ __status__ = "Prototype"
 # Device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Set random seeds for reproducibility
+torch.manual_seed(42)
+np.random.seed(42)
+random.seed(42)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(42)
+
 # Hyperparameters
 BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
 NUM_CLASSES = 6
+NUM_EPOCHS = 100
+SUBSET = 25
 LEARNING_RATE = 1e-4
-NUM_EPOCHS = 25
-
 
 def train(training_loader = None,
             validation_loader = None, 
@@ -63,7 +72,7 @@ def train(training_loader = None,
             outputs = model(images)
 
             # print(f" [DEBUG 1] image shape: {outputs.shape}, mask shape: {masks.shape}")
-            loss = criterion.loss(outputs, masks)
+            loss = criterion(outputs, masks)
             # print("[DEBUG 2] Passed loss calculation")
 
             # Backward pass
@@ -89,7 +98,7 @@ def train(training_loader = None,
                 # Forward pass only
                 outputs = model(images)
 
-                loss = criterion.loss(outputs, masks)
+                loss = criterion(outputs, masks)
                 epoch_loss_eval += loss.item()
 
         avg_loss_eval = epoch_loss_eval / len(validation_loader)
@@ -98,24 +107,31 @@ def train(training_loader = None,
         print(f"📈 Training Loss: {avg_loss:.4f}")
         print(f"📈 Validation Loss: {avg_loss_eval:.4f}")
 
-    print("✅ Training complete with Attention U-Net! ✅")
-    print("💖 Thank you for standing at attention 💖")
+    if 1 - avg_loss_eval >= 0.75:  # Saves Model if Validation Dice Coefficient is at least 0.75
+        SAVE_PATH = "recognition\43711451_HipMRI2D_AttentionUNET\saved_model\final_model_weights.pth"
+        torch.save(model.state_dict(), SAVE_PATH)
+        print(f"💲 Validation Dice Coefficient below 0.75. Model saved to {SAVE_PATH} 💲")
+    else:
+        print("⛔ Model not saved: Validation Dice Coefficient below 0.75 ⛔")
+
+    print("🛑 Attention!! Training complete with Attention U-Net!!! 🛑")
     return losses
 
 if __name__ == "__main__":
     print("💛 Loading training data 💛")
-    training_dataset = HipMRI2D(dataset = "train", first_n = 20)
-    training_loader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = True)
+    training_loader = LoadData(dataset = "train", first_n = SUBSET, batch_size = BATCH_SIZE, shuffle = True)
     print("💚 Training data loading complete 💚")
 
     print("💛 Loading validation data 💛")
-    validation_dataset = HipMRI2D(dataset = "validate", first_n= 20)
-    validation_loader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = False)
+    validation_loader = LoadData(dataset = "validate", first_n = SUBSET, batch_size = BATCH_SIZE, shuffle = False)
     print("💚 Validation data loading complete 💚")
 
     print(f"💛 Initialising the Attention U-Net model on {device} 💛")
-    model = model(num_channels = 1 , num_classes = NUM_CLASSES)
+    model = model(num_channels = 1, num_classes = NUM_CLASSES)
     model.to(device)
     print(f"💚 Model initialisation complete on {device} 💚")
 
     train(training_loader = training_loader, validation_loader = validation_loader, model=model)
+
+
+
