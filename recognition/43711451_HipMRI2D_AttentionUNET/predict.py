@@ -3,7 +3,6 @@
 Contains the main prediction script for the model after training
 """
 
-from pathlib import Path
 import torch
 import numpy as np
 from dataset import standardise, resample_to_img
@@ -11,6 +10,7 @@ from modules import AttentionUNet as model
 import nibabel as nib
 from nibabel import Nifti1Image
 from matplotlib import pyplot as plt
+from pathlib import Path
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -32,7 +32,7 @@ NUM_EPOCHS = 25
 LEARNING_RATE = 1e-4
 SAVED_MODEL_PATH = "C:/Users/cleod/OneDrive/Documents/Work/UQ/COMP3710/Python Workspace/3710-pattern-analysis/recognition/43711451_HipMRI2D_AttentionUNET/saved_models/full_set_5_epochs.pth"
 TEMPLATE_IMG_PATH = "D:/keras_slices_data/keras_slices_train/case_004_week_0_slice_0.nii.gz"
-SELECTED_SLICE = "case_040_week_2_slice_0.nii.gz"
+SELECTED_SLICE = "case_040_week_3_slice_0.nii.gz"
 INPUT_IMG_PATH = f"D:/keras_slices_data/keras_slices_test/{SELECTED_SLICE}"
 OUTPUT_MASK_PATH = f"C:/Users/cleod/OneDrive/Documents/Work/UQ/COMP3710/Python Workspace/3710-pattern-analysis/recognition/43711451_HipMRI2D_AttentionUNET/mask_output/pred_mask_{SELECTED_SLICE}"
 
