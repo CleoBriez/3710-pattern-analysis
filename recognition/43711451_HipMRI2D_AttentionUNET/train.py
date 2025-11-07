@@ -3,8 +3,8 @@
 Contains the main training script for the model
 """
 
-import utils as util
-import dataset as data
+from utils import Dice
+from dataset import HipMRI2D, DataLoader
 from modules import AttentionUNet as model
 import torch
 
@@ -21,17 +21,17 @@ __status__ = "Prototype"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Hyperparameters
-LEARNING_RATE = 1e-4
 BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
-NUM_EPOCHS = 25
 NUM_CLASSES = 6
+LEARNING_RATE = 1e-4
+NUM_EPOCHS = 25
+
 
 def train(training_loader = None,
             validation_loader = None, 
             epochs = NUM_EPOCHS,
             model = model, 
-            criterion = util.Dice(),
-            optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)):
+):
     """
     Train the Attention U-Net model with the training and validation data loaders.
 
@@ -40,11 +40,12 @@ def train(training_loader = None,
         validation_loader: DataLoader for validation data.
         epochs: Number of training epochs.
         model: The Attention U-Net model to be trained.
-        criterion: Loss function to be used.
-        optimizer: Optimizer for model parameters.
     Returns:
         losses: List of average training losses per epoch.
     """
+
+    criterion = Dice()
+    optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
     losses = []
 
@@ -63,7 +64,6 @@ def train(training_loader = None,
 
             # print(f" [DEBUG 1] image shape: {outputs.shape}, mask shape: {masks.shape}")
             loss = criterion.loss(outputs, masks)
-
             # print("[DEBUG 2] Passed loss calculation")
 
             # Backward pass
@@ -101,3 +101,21 @@ def train(training_loader = None,
     print("✅ Training complete with Attention U-Net! ✅")
     print("💖 Thank you for standing at attention 💖")
     return losses
+
+if __name__ == "__main__":
+    print("💛 Loading training data 💛")
+    training_dataset = HipMRI2D(dataset = "train", first_n = 20)
+    training_loader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = True)
+    print("💚 Training data loading complete 💚")
+
+    print("💛 Loading validation data 💛")
+    validation_dataset = HipMRI2D(dataset = "validate", first_n= 20)
+    validation_loader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = False)
+    print("💚 Validation data loading complete 💚")
+
+    print(f"💛 Initialising the Attention U-Net model on {device} 💛")
+    model = model(num_channels = 1 , num_classes = NUM_CLASSES)
+    model.to(device)
+    print(f"💚 Model initialisation complete on {device} 💚")
+
+    train(training_loader = training_loader, validation_loader = validation_loader, model=model)

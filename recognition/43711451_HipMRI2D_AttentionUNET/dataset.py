@@ -10,7 +10,7 @@ from nilearn.image import resample_to_img
 from tqdm import tqdm
 from pathlib import Path
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -21,7 +21,12 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
+# Dataset path
 path = "D:/keras_slices_data/keras_slices_"  # Adjust this path as needed
+
+# Hyperparameters
+BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
+NUM_CLASSES = 6
 
 def to_channels(arr: np.ndarray, num_classes: int, dtype = np.uint8)-> np.ndarray:
     """
@@ -127,7 +132,10 @@ def load_data_2D(imageNames, normalise = False, categorical = False, num_classes
         resampled_nifti = resample_to_img(
             niftiImage, 
             template_nifti, 
-            interpolation = interpolation
+            interpolation = interpolation,
+            # Suppressing annoying warnings
+            force_resample=True,
+            copy_header=True
         )
         # Get data from the *resampled* image
         inImage = resampled_nifti.get_fdata(caching = "unchanged") # read disk only
@@ -224,3 +232,14 @@ class HipMRI2D(Dataset):
     
     def get_std(self):
         return np.std(self.dataset)
+
+if __name__ == "__main__":
+    print("💛 Loading training data 💛")
+    training_dataset = HipMRI2D(dataset = "train", first_n = 20)
+    training_loader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = True)
+    print("💚 Training data loading complete 💚")
+
+    print("💛 Loading validation data 💛")
+    validation_dataset = HipMRI2D(dataset = "validate", first_n= 20)
+    validation_loader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = False)
+    print("💚 Validation data loading complete 💚")

@@ -15,6 +15,13 @@ __maintainer__ = "Cleodora Kizmann"
 __email__ = "cleodora.kizmann@student.uq.edu.au"
 __status__ = "Prototype"
 
+# Device configuration
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Hyperparameters
+BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
+NUM_CLASSES = 6
+
 class AttentionGate(nn.Module):
     """
     Attention Gate for U-Net skip connections.
@@ -245,3 +252,9 @@ class AttentionUNet(nn.Module):
         # ----- Output -----
         logits = self.outc(x)
         return logits
+
+if __name__ == "__main__":
+    print(f"💛 Initialising the Attention U-Net model on {device} 💛")
+    model = AttentionUNet(num_channels = 1 , num_classes = NUM_CLASSES)
+    model.to(device)
+    print(f"💚 Model initialisation complete on {device} 💚")
