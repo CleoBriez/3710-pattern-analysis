@@ -131,7 +131,7 @@ if __name__ == "__main__":
     model.to(device)
     print(f"💚 Model initialisation complete on {device} 💚")
 
-    train(training_loader = training_loader, validation_loader = validation_loader, model=model)
+    train(training_loader = training_loader, validation_loader = validation_loader, model = model)
 
 
 
