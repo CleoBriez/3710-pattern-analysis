@@ -6,7 +6,7 @@ Contains the main prediction script for the model after training
 
 import torch
 import numpy as np
-from dataset import HipMRI2D, DataLoader, standardise, resample_to_img
+from dataset import HipMRI2D, LoadData, standardise, resample_to_img
 from modules import AttentionUNet as model 
 from train import device, train
 import matplotlib.pyplot as plt
@@ -27,9 +27,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Hyperparameters
 BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
+SUBSET = 250
 NUM_CLASSES = 6
-LEARNING_RATE = 1e-4
 NUM_EPOCHS = 25
+
 
 def predict(model, image_path, template):
     """
@@ -96,21 +97,4 @@ def predict(model, image_path, template):
     return pred_mask_np, resampled_nifti.affine, resampled_nifti.header
 
 if __name__ == "__main__":
-    print("💛 Loading training data 💛")
-    training_dataset = HipMRI2D(dataset = "train", first_n = 250)
-    training_loader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = True)
-    print("💚 Training data loading complete 💚")
-
-    print("💛 Loading validation data 💛")
-    validation_dataset = HipMRI2D(dataset = "validate", first_n = 250)
-    validation_loader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = False)
-    print("💚 Validation data loading complete 💚")
-
-    print(f"💛 Initialising the Attention U-Net model on {device} 💛")
-    model = model(num_channels = 1 , num_classes = NUM_CLASSES)
-    model.to(device)
-    print(f"💚 Model initialisation complete on {device} 💚")
-
-    train(training_loader = training_loader, validation_loader = validation_loader, model = model, epochs = NUM_EPOCHS)
-    
-# more
+    pass
