@@ -3,6 +3,7 @@
 Contains the main prediction script for the model after training
 """
 
+from pathlib import Path
 import torch
 import numpy as np
 from dataset import standardise, resample_to_img
@@ -31,8 +32,9 @@ NUM_EPOCHS = 25
 LEARNING_RATE = 1e-4
 SAVED_MODEL_PATH = "C:/Users/cleod/OneDrive/Documents/Work/UQ/COMP3710/Python Workspace/3710-pattern-analysis/recognition/43711451_HipMRI2D_AttentionUNET/saved_models/full_set_5_epochs.pth"
 TEMPLATE_IMG_PATH = "D:/keras_slices_data/keras_slices_train/case_004_week_0_slice_0.nii.gz"
-INPUT_IMG_PATH = "D:/keras_slices_data/keras_slices_test/case_040_week_0_slice_0.nii.gz"
-OUTPUT_MASK_PATH = "C:/Users/cleod/OneDrive/Documents/Work/UQ/COMP3710/Python Workspace/3710-pattern-analysis/recognition/43711451_HipMRI2D_AttentionUNET/mask_output/pred_mask_case_040_week_1_slice_0.nii.gz"
+SELECTED_SLICE = "case_040_week_2_slice_0.nii.gz"
+INPUT_IMG_PATH = f"D:/keras_slices_data/keras_slices_test/{SELECTED_SLICE}"
+OUTPUT_MASK_PATH = f"C:/Users/cleod/OneDrive/Documents/Work/UQ/COMP3710/Python Workspace/3710-pattern-analysis/recognition/43711451_HipMRI2D_AttentionUNET/mask_output/pred_mask_{SELECTED_SLICE}"
 
 def predict(model, image_path, template):
     """
@@ -52,7 +54,12 @@ def predict(model, image_path, template):
     nifti_image = standardise(image_path)
     
     # Resample
-    resampled_nifti = resample_to_img(nifti_image, template, interpolation="linear")
+    resampled_nifti = resample_to_img(nifti_image, 
+                                        template, 
+                                        interpolation="linear",   
+                                        # Suppressing annoying warnings
+                                        force_resample=True,
+                                        copy_header=True)
     
     # Get Data & Normalize
     image_np = resampled_nifti.get_fdata(caching="unchanged")
@@ -112,7 +119,12 @@ def visualize_prediction(image_path, template, pred_mask):
 
     # Load & Resample original image
     nii = standardise(image_path)
-    resampled_nii = resample_to_img(nii, template, interpolation="linear")
+    resampled_nii = resample_to_img(nii, 
+                                    template, 
+                                    interpolation="linear",
+                                    # Suppressing annoying warnings
+                                    force_resample=True,
+                                    copy_header=True)
     image_np = resampled_nii.get_fdata(caching="unchanged")
     
     # Handle 3D (H, W, 1) -> 2D (H, W)
@@ -148,9 +160,9 @@ def visualize_prediction(image_path, template, pred_mask):
 
     plt.tight_layout()
     # Save the figure
-    # output_fig_path = Path(predicted_mask_path).with_suffix('.png')
-    # plt.savefig(output_fig_path, dpi=300)
-    # print(f"Visualization saved to {output_fig_path}")
+    output_fig_path = Path(OUTPUT_MASK_PATH).with_suffix('.png')
+    plt.savefig(output_fig_path, dpi=300)
+    print(f"Visualization saved to {output_fig_path}")
     plt.show()
 
 if __name__ == "__main__":
