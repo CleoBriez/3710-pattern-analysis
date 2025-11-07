@@ -4,7 +4,7 @@ Contains the main training script for the model
 """
 
 from utils import Dice
-from dataset import HipMRI2D, LoadData
+from dataset import LoadData
 from modules import AttentionUNet as model
 import numpy as np
 import random
@@ -31,10 +31,11 @@ if torch.cuda.is_available():
 
 # Hyperparameters
 BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
+SUBSET = 0
 NUM_CLASSES = 6
-NUM_EPOCHS = 100
-SUBSET = 25
+NUM_EPOCHS = 25
 LEARNING_RATE = 1e-4
+SAVED_MODEL_PATH = "recognition\43711451_HipMRI2D_AttentionUNET\saved_model\final_model_weights.pth"
 
 def train(training_loader = None,
             validation_loader = None, 
@@ -108,9 +109,8 @@ def train(training_loader = None,
         print(f"📈 Validation Loss: {avg_loss_eval:.4f}")
 
     if 1 - avg_loss_eval >= 0.75:  # Saves Model if Validation Dice Coefficient is at least 0.75
-        SAVE_PATH = "recognition\43711451_HipMRI2D_AttentionUNET\saved_model\final_model_weights.pth"
-        torch.save(model.state_dict(), SAVE_PATH)
-        print(f"💲 Validation Dice Coefficient below 0.75. Model saved to {SAVE_PATH} 💲")
+        torch.save(model.state_dict(), SAVED_MODEL_PATH)
+        print(f"💲 Validation Dice Coefficient below 0.75. Model saved to {SAVED_MODEL_PATH} 💲")
     else:
         print("⛔ Model not saved: Validation Dice Coefficient below 0.75 ⛔")
 
@@ -132,6 +132,3 @@ if __name__ == "__main__":
     print(f"💚 Model initialisation complete on {device} 💚")
 
     train(training_loader = training_loader, validation_loader = validation_loader, model = model)
-
-
-
