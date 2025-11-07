@@ -69,3 +69,4 @@ class Dice(nn.Module):
 
         # Return Dice Loss (1 - Dice Coefficient)
         return 1 - avg_dice
+    

@@ -6,12 +6,10 @@ Contains the main prediction script for the model after training
 
 import torch
 import numpy as np
-from dataset import HipMRI2D, LoadData, standardise, resample_to_img
+from dataset import standardise, resample_to_img
 from modules import AttentionUNet as model 
-from train import device, train
-import matplotlib.pyplot as plt
-from matplotlib import transforms
-
+import nibabel as nib
+from nibabel import Nifti1Image
 
 __author__ = "Cleodora Kizmann"
 __copyright__ = "Copyright 2025, Cleodora Kizmann"
@@ -27,10 +25,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Hyperparameters
 BATCH_SIZE = 16 # I got 8GB VRAM on my GPU so I might be pushing this a little
-SUBSET = 250
+SUBSET = 0
 NUM_CLASSES = 6
 NUM_EPOCHS = 25
-
+LEARNING_RATE = 1e-4
+SAVED_MODEL_PATH = "recognition/43711451_HipMRI2D_AttentionUNET/saved_model/final_model_weights.pth"
+TEMPLATE_IMG_PATH = "D:/keras_slices_data/keras_slices_train/case_004_week_0_slice_0.nii.gz"
+INPUT_IMG_PATH = "D:/keras_slices_data/keras_slices_test/"
+OUTPUT_MASK_PATH = "recognition/43711451_HipMRI2D_AttentionUNET/mask_output"
 
 def predict(model, image_path, template):
     """
@@ -97,4 +99,43 @@ def predict(model, image_path, template):
     return pred_mask_np, resampled_nifti.affine, resampled_nifti.header
 
 if __name__ == "__main__":
-    pass
+    print(f"💛 Initialising the Attention U-Net model from path:{SAVED_MODEL_PATH} on {device} 💛")
+    model = model(num_channels = 1, num_classes = NUM_CLASSES)
+    print(f"Loading saved weights from {SAVED_MODEL_PATH}...")
+    # map_location = device just makes sure it works even if trained on a GPU and are now predicting on a CPU. 
+    model.load_state_dict(torch.load(SAVED_MODEL_PATH, map_location = device))
+    model.to(device)
+    model.eval()
+    print(f"💚 Model loaded on {device} 💚")
+
+    try:
+        print(f"Loading template from {TEMPLATE_IMG_PATH}...")
+        template = standardise(TEMPLATE_IMG_PATH)
+    except FileNotFoundError:
+        print(f"Error: Template image not found at {TEMPLATE_IMG_PATH}")
+        exit()
+
+    try:
+        pred_mask, affine, header = predict(
+            model = model,
+            image_path = INPUT_IMG_PATH,
+            template = template,
+        )
+
+        print(f"Saving mask preditction to {OUTPUT_MASK_PATH}...")
+
+        # Create a new NIfTI object for the mask
+        # We use the affine and header from the *resampled input*
+        # so the mask perfectly overlays it.
+        mask_nii = Nifti1Image(pred_mask.astype(np.int16), affine, header)
+        
+        # Update header to reflect 2D shape (or 3D with 1 slice)
+        mask_nii.header.set_data_shape(pred_mask.shape)
+        mask_nii.header.set_data_dtype(np.int16) # Save as integer
+        
+        nib.save(mask_nii, OUTPUT_MASK_PATH)
+        
+        print(f"Prediction complete. Mask saved to {OUTPUT_MASK_PATH}")
+
+    except FileNotFoundError:
+        print(f"Error: Input image not found at {INPUT_IMG_PATH}")

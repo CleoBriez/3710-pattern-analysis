@@ -258,3 +258,4 @@ if __name__ == "__main__":
     model = AttentionUNet(num_channels = 1 , num_classes = NUM_CLASSES)
     model.to(device)
     print(f"💚 Model initialisation complete on {device} 💚")
+    
